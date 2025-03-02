@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -25,7 +24,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check for active session and set the user
     const fetchSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Error fetching session:', error);
+        toast({
+          title: "Authentication Error",
+          description: "There was a problem connecting to the authentication service.",
+          variant: "destructive",
+        });
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -35,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Auth state changed:', _event);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -43,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [toast]);
 
   const signUp = async (email: string, password: string, fullName: string, userType: string) => {
     try {

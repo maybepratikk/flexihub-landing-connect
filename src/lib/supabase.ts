@@ -1,9 +1,10 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// These are public keys that are safe to be in the client
-const supabaseUrl = 'https://your-project-url.supabase.co';
-const supabaseAnonKey = 'your-anon-key';
+// These should be replaced with your actual Supabase project details
+// Currently using placeholders - for production, use environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project-url.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
 
 // Create a single supabase client for the entire app
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
