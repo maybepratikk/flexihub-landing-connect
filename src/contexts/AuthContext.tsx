@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -73,21 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
       
-      // Create profile record if we have a user
-      if (data?.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            { 
-              id: data.user.id,
-              email,
-              full_name: fullName,
-              user_type: userType,
-            },
-          ]);
-          
-        if (profileError) throw profileError;
-      }
+      // Profile record will be created automatically via database trigger
       
       toast({
         title: "Success!",
