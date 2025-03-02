@@ -43,8 +43,8 @@ const ForgotPasswordPage = () => {
                 </CardTitle>
                 <CardDescription className="text-center">
                   {isSubmitted 
-                    ? 'We've sent you a link to reset your password' 
-                    : 'Enter your email and we'll send you a link to reset your password'}
+                    ? "We've sent you a link to reset your password" 
+                    : "Enter your email and we'll send you a link to reset your password"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
