@@ -292,18 +292,37 @@ export async function getJobs(filters?: {
 
 // Function to get a specific job by ID
 export async function getJobById(jobId: string) {
-  const { data, error } = await supabase
-    .from('jobs')
-    .select('*, profiles!inner(full_name, avatar_url)')
-    .eq('id', jobId)
-    .single();
-  
-  if (error) {
-    console.error('Error fetching job:', error);
+  try {
+    // First attempt to get the job with profiles
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('*, profiles(*)')
+      .eq('id', jobId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching job with profiles:', error);
+      
+      // If that fails, try to fetch just the job without the join
+      const { data: jobData, error: jobError } = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('id', jobId)
+        .single();
+      
+      if (jobError) {
+        console.error('Error fetching job without profiles:', jobError);
+        return null;
+      }
+      
+      return jobData;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Exception in getJobById:', error);
     return null;
   }
-  
-  return data;
 }
 
 // Function to get jobs created by a client
