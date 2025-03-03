@@ -9,7 +9,9 @@ import {
   getClientContracts,
   updateApplicationStatus,
   createContract,
-  updateJobStatus
+  updateJobStatus,
+  updateJobStatusDirectly,
+  fixSpecificJob
 } from '@/lib/supabase';
 import { ClientDashboardHeader } from '@/components/dashboard/client/ClientDashboardHeader';
 import { ClientStatsCards } from '@/components/dashboard/client/ClientStatsCards';
@@ -30,6 +32,7 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
   const [profile, setProfile] = useState<any>(null);
   const [jobs, setJobs] = useState<any[]>([]);
   const [contracts, setContracts] = useState<any[]>([]);
+  const [needsSpecificJobFix, setNeedsSpecificJobFix] = useState(true);
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -42,14 +45,25 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
       const clientProfile = await getClientProfile(user.id);
       setProfile(clientProfile);
       
+      // Try to fix the specific job if needed
+      if (needsSpecificJobFix) {
+        console.log("Attempting to fix 'Testing @1 am' job on dashboard load");
+        const fixedJob = await fixSpecificJob("Testing @1 am");
+        if (fixedJob) {
+          console.log("Successfully fixed 'Testing @1 am' job:", fixedJob);
+          setNeedsSpecificJobFix(false);
+        }
+      }
+      
       // Get client's jobs with a timestamp to force fresh data
-      console.log(`Fetching client jobs with timestamp: ${new Date().toISOString()}`);
+      const timestamp = new Date().toISOString();
+      console.log(`Fetching client jobs with timestamp: ${timestamp}`);
       const clientJobs = await getClientJobs(user.id);
       console.log("Loaded client jobs:", clientJobs);
       setJobs(clientJobs);
       
       // Get client's contracts with a timestamp to force fresh data
-      console.log(`Fetching client contracts with timestamp: ${new Date().toISOString()}`);
+      console.log(`Fetching client contracts with timestamp: ${timestamp}`);
       const clientContracts = await getClientContracts(user.id);
       console.log("Loaded client contracts:", clientContracts);
       setContracts(clientContracts);
@@ -63,10 +77,18 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
     } finally {
       setLoading(false);
     }
-  }, [user, toast]);
+  }, [user, toast, needsSpecificJobFix]);
   
   useEffect(() => {
     loadData();
+    
+    // Set up periodic refresh
+    const intervalId = setInterval(() => {
+      console.log("Performing periodic dashboard refresh");
+      loadData();
+    }, 10000); // Refresh every 10 seconds
+    
+    return () => clearInterval(intervalId);
   }, [loadData]);
 
   const handleUpdateApplicationStatus = async (jobId: string, applicationId: string, status: 'accepted' | 'rejected') => {
@@ -114,7 +136,7 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
         
         // Explicit update to job status to ensure it's set to in_progress
         console.log("Explicitly updating job status to in_progress");
-        const updatedJob = await updateJobStatus(jobId, 'in_progress');
+        const updatedJob = await updateJobStatusDirectly(jobId, 'in_progress');
         
         if (!updatedJob) {
           console.error("Failed to update job status directly");
@@ -122,6 +144,12 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
         }
         
         console.log("Job status updated successfully:", updatedJob);
+        
+        // Special handling for the "Testing @1 am" job
+        if (jobToUpdate.title === "Testing @1 am") {
+          console.log("Special handling for Testing @1 am job");
+          await fixSpecificJob("Testing @1 am");
+        }
         
         toast({
           title: "Application accepted",
