@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -29,6 +29,7 @@ export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Add scroll event listener
   useEffect(() => {
@@ -45,6 +46,18 @@ export function Navbar() {
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location]);
+
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    console.log("Sign out clicked");
+    
+    try {
+      await signOut();
+      // Navigation is now handled in the AuthContext
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
 
   return (
     <header 
@@ -100,7 +113,7 @@ export function Navbar() {
                     <Link to="/settings">Settings</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut()}>
+                  <DropdownMenuItem onClick={handleSignOut}>
                     Sign out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -162,7 +175,7 @@ export function Navbar() {
                       Profile
                     </Link>
                     <button
-                      onClick={() => signOut()}
+                      onClick={handleSignOut}
                       className="block w-full text-left py-2 text-foreground/80 hover:text-foreground"
                     >
                       Sign out
