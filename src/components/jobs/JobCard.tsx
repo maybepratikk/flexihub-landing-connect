@@ -24,7 +24,7 @@ export function JobCard({ job, onClick }: JobCardProps) {
     >
       <CardHeader className="pb-2">
         <div className="flex flex-wrap justify-between items-start gap-2">
-          <CardTitle className="text-xl break-words">{job.title}</CardTitle>
+          <CardTitle className="text-xl md:text-2xl break-words">{job.title}</CardTitle>
           <Badge variant={job.budget_type === 'fixed' ? 'outline' : 'default'} className="whitespace-nowrap">
             {job.budget_type === 'fixed' ? 'Fixed' : 'Hourly'}
           </Badge>

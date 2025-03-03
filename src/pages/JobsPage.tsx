@@ -135,27 +135,37 @@ export default function JobsPage() {
   ];
 
   return (
-    <div className="container mx-auto py-10 px-4 sm:px-6">
-      <h1 className="text-3xl font-bold mb-2">Find Jobs</h1>
-      <p className="text-muted-foreground mb-8">
+    <div className="container mx-auto py-6 sm:py-10 px-4 sm:px-6">
+      <h1 className="text-2xl sm:text-3xl font-bold mb-2">Find Jobs</h1>
+      <p className="text-muted-foreground mb-6 sm:mb-8">
         Browse through available jobs and find your next opportunity
       </p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Filters - Show on larger screens normally, can be toggled on mobile */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Filters</CardTitle>
+      <div className="grid grid-cols-1 gap-6">
+        {/* Filters - Mobile collapsible, desktop sidebar */}
+        <div className="lg:hidden">
+          <Card className="mb-4">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex justify-between items-center">
+                <span>Filters</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0"
+                  onClick={() => setFilters({category: '', experience: ''})}
+                >
+                  Clear
+                </Button>
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="category-mobile">Category</Label>
                 <Select 
                   value={filters.category} 
                   onValueChange={(value) => handleFilterChange('category', value)}
                 >
-                  <SelectTrigger id="category">
+                  <SelectTrigger id="category-mobile">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -168,12 +178,12 @@ export default function JobsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="experience">Experience Level</Label>
+                <Label htmlFor="experience-mobile">Experience Level</Label>
                 <Select 
                   value={filters.experience} 
                   onValueChange={(value) => handleFilterChange('experience', value)}
                 >
-                  <SelectTrigger id="experience">
+                  <SelectTrigger id="experience-mobile">
                     <SelectValue placeholder="Select level" />
                   </SelectTrigger>
                   <SelectContent>
@@ -184,68 +194,118 @@ export default function JobsPage() {
                   </SelectContent>
                 </Select>
               </div>
-
-              <Separator className="my-4" />
-
-              <Button 
-                variant="outline" 
-                onClick={clearFilters}
-                className="w-full"
-              >
-                Clear Filters
-              </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Job Listings */}
-        <div className={`lg:col-span-${selectedJobId ? '2' : '3'}`}>
-          <div className="mb-6 flex gap-2">
-            <div className="relative flex-grow">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search jobs by title, description, or skills..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="pl-10"
-              />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Desktop Filters Column */}
+          <div className="hidden lg:block lg:col-span-3">
+            <div className="sticky top-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Filters</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Select 
+                      value={filters.category} 
+                      onValueChange={(value) => handleFilterChange('category', value)}
+                    >
+                      <SelectTrigger id="category">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        {categories.map(category => (
+                          <SelectItem key={category} value={category}>{category}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="experience">Experience Level</Label>
+                    <Select 
+                      value={filters.experience} 
+                      onValueChange={(value) => handleFilterChange('experience', value)}
+                    >
+                      <SelectTrigger id="experience">
+                        <SelectValue placeholder="Select level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Levels</SelectItem>
+                        {experienceLevels.map(level => (
+                          <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Separator className="my-4" />
+
+                  <Button 
+                    variant="outline" 
+                    onClick={clearFilters}
+                    className="w-full"
+                  >
+                    Clear Filters
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
-            <Button onClick={handleSearch}>Search</Button>
           </div>
 
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          {/* Job Listings */}
+          <div className={`${selectedJobId ? 'lg:col-span-5' : 'lg:col-span-9'}`}>
+            <div className="mb-6 flex gap-2">
+              <div className="relative flex-grow">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search jobs by title, description, or skills..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  className="pl-10"
+                />
+              </div>
+              <Button onClick={handleSearch}>Search</Button>
             </div>
-          ) : filteredJobs.length === 0 ? (
-            <div className="text-center py-16 space-y-4">
-              <Briefcase className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h2 className="text-xl font-semibold">No jobs found</h2>
-              <p className="text-muted-foreground">
-                Try adjusting your search or filters to find what you're looking for.
-              </p>
-              <Button variant="outline" onClick={clearFilters}>
-                Clear Filters
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-6">
-              {filteredJobs.map(job => (
-                <JobCard key={job.id} job={job} onClick={handleJobCardClick} />
-              ))}
+
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+              </div>
+            ) : filteredJobs.length === 0 ? (
+              <div className="text-center py-16 space-y-4">
+                <Briefcase className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h2 className="text-xl font-semibold">No jobs found</h2>
+                <p className="text-muted-foreground">
+                  Try adjusting your search or filters to find what you're looking for.
+                </p>
+                <Button variant="outline" onClick={clearFilters}>
+                  Clear Filters
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:gap-6">
+                {filteredJobs.map(job => (
+                  <JobCard key={job.id} job={job} onClick={handleJobCardClick} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Job Sidebar - Only visible when a job is selected */}
+          {selectedJobId && (
+            <div className="lg:col-span-4 col-span-1">
+              <div className="sticky top-4 border rounded-lg shadow-sm bg-background overflow-hidden max-h-[calc(100vh-120px)]">
+                <JobSidebar jobId={selectedJobId} onClose={handleCloseSidebar} />
+              </div>
             </div>
           )}
         </div>
-
-        {/* Job Sidebar - Only visible when a job is selected */}
-        {selectedJobId && (
-          <div className="lg:col-span-1 relative">
-            <div className="sticky top-4 border rounded-lg shadow-sm bg-background h-[calc(100vh-120px)] overflow-hidden">
-              <JobSidebar jobId={selectedJobId} onClose={handleCloseSidebar} />
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
