@@ -66,10 +66,13 @@ export function JobApplicationsList({
         
         console.log('Contract created successfully:', newContract);
         
-        // Update job status to in_progress
+        // Explicitly update job status to in_progress to ensure it happens
+        // This is redundant but ensures the status is updated
+        console.log('Explicitly updating job status to in_progress');
         const updatedJob = await updateJobStatus(jobId, 'in_progress');
         
         if (!updatedJob) {
+          console.error('Failed to update job status directly');
           throw new Error('Failed to update job status');
         }
         
@@ -77,7 +80,7 @@ export function JobApplicationsList({
         
         toast({
           title: "Application accepted",
-          description: "A contract has been created with this freelancer.",
+          description: "A contract has been created with this freelancer and the job status has been updated.",
           variant: "default",
         });
       } else {

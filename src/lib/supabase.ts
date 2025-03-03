@@ -506,6 +506,14 @@ export async function createContract(contractData: Omit<Contract, 'id' | 'create
     }
     
     console.log('Contract created successfully:', data);
+    
+    // Immediately update the job status after creating a contract
+    if (data) {
+      console.log(`Updating job ${contractData.job_id} to in_progress after contract creation`);
+      const jobUpdate = await updateJobStatus(contractData.job_id, 'in_progress');
+      console.log('Job status update result:', jobUpdate);
+    }
+    
     return data;
   } catch (error) {
     console.error('Exception in createContract:', error);
@@ -670,20 +678,31 @@ export async function hasAppliedToJob(jobId: string, freelancerId: string) {
   return data;
 }
 
-// Enhanced function to update a job's status
+// Enhanced function to update a job's status with more logging and error handling
 export async function updateJobStatus(jobId: string, status: 'open' | 'in_progress' | 'completed' | 'cancelled') {
   try {
-    console.log(`Updating job ${jobId} status to ${status}`);
+    console.log(`====== UPDATING JOB STATUS ======`);
+    console.log(`Job ID: ${jobId}, New Status: ${status}`);
     
     if (!jobId) {
       throw new Error('Job ID is required');
     }
     
+    // Get current job status for logging
+    const { data: currentJob } = await supabase
+      .from('jobs')
+      .select('status, title')
+      .eq('id', jobId)
+      .single();
+      
+    console.log(`Current job status: ${currentJob?.status}, title: ${currentJob?.title}`);
+    
+    // Update the job status
     const { data, error } = await supabase
       .from('jobs')
       .update({ 
         status,
-        updated_at: new Date().toISOString() // Update the timestamp
+        updated_at: new Date().toISOString()
       })
       .eq('id', jobId)
       .select()
@@ -695,6 +714,17 @@ export async function updateJobStatus(jobId: string, status: 'open' | 'in_progre
     }
     
     console.log('Job status updated successfully:', data);
+    
+    // Verify the update by fetching the job again
+    const { data: verifiedJob } = await supabase
+      .from('jobs')
+      .select('status, title')
+      .eq('id', jobId)
+      .single();
+      
+    console.log(`Verified job status: ${verifiedJob?.status}, title: ${verifiedJob?.title}`);
+    console.log(`====== JOB STATUS UPDATE COMPLETE ======`);
+    
     return data;
   } catch (error) {
     console.error('Exception in updateJobStatus:', error);

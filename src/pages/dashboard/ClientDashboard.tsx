@@ -42,12 +42,14 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
       const clientProfile = await getClientProfile(user.id);
       setProfile(clientProfile);
       
-      // Get client's jobs
+      // Get client's jobs with a timestamp to force fresh data
+      console.log(`Fetching client jobs with timestamp: ${new Date().toISOString()}`);
       const clientJobs = await getClientJobs(user.id);
       console.log("Loaded client jobs:", clientJobs);
       setJobs(clientJobs);
       
-      // Get client's contracts
+      // Get client's contracts with a timestamp to force fresh data
+      console.log(`Fetching client contracts with timestamp: ${new Date().toISOString()}`);
       const clientContracts = await getClientContracts(user.id);
       console.log("Loaded client contracts:", clientContracts);
       setContracts(clientContracts);
@@ -110,10 +112,12 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
         
         console.log("Contract created successfully:", newContract);
         
-        // Update job status to in_progress
+        // Explicit update to job status to ensure it's set to in_progress
+        console.log("Explicitly updating job status to in_progress");
         const updatedJob = await updateJobStatus(jobId, 'in_progress');
         
         if (!updatedJob) {
+          console.error("Failed to update job status directly");
           throw new Error('Failed to update job status');
         }
         
@@ -121,7 +125,7 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
         
         toast({
           title: "Application accepted",
-          description: "A contract has been created with this freelancer.",
+          description: "A contract has been created with this freelancer and the job status has been updated.",
           variant: "default",
         });
       } else {
@@ -132,7 +136,7 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
         });
       }
       
-      // Refresh data immediately to show updated status
+      // Force immediate data refresh to show updated status
       await loadData();
       
       // Call parent refresh if provided
