@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -167,7 +166,6 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
         <TabsContent value="contracts" className="space-y-4">
           <ClientContractsTab
             contracts={contracts}
-            navigate={navigate}
             loading={loading}
           />
         </TabsContent>
