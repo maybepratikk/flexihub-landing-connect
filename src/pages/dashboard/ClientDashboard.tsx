@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -369,63 +368,19 @@ export function ClientDashboard() {
                                     )}
                                   </div>
                                   
-                                  {/* Show more details for accepted applications */}
-                                  {application.status === 'accepted' && (
-                                    <div className="mt-4 pt-4 border-t text-sm">
-                                      <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                          <h5 className="font-semibold mb-1">Contact Information:</h5>
-                                          <p>Email: {application.contact_email || 'N/A'}</p>
-                                          <p>Phone: {application.contact_phone || 'N/A'}</p>
-                                        </div>
-                                        <div>
-                                          <h5 className="font-semibold mb-1">Experience:</h5>
-                                          <p>{application.freelancer_profiles?.years_experience || 'N/A'} years</p>
-                                          
-                                          {application.freelancer_profiles?.skills && (
-                                            <div className="mt-2">
-                                              <p className="font-semibold">Skills:</p>
-                                              <div className="flex flex-wrap gap-1 mt-1">
-                                                {application.freelancer_profiles.skills.map((skill: string, i: number) => (
-                                                  <Badge key={i} variant="outline" className="text-xs">{skill}</Badge>
-                                                ))}
-                                              </div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                      
-                                      {/* Pitch and cover letter */}
-                                      <div className="mt-4">
-                                        <h5 className="font-semibold mb-1">Pitch:</h5>
-                                        <p className="whitespace-pre-line">{application.pitch || 'No pitch provided.'}</p>
-                                        
-                                        {application.cover_letter && (
-                                          <div className="mt-2">
-                                            <h5 className="font-semibold mb-1">Cover Letter:</h5>
-                                            <p className="whitespace-pre-line">{application.cover_letter}</p>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-                                  
-                                  {/* Show pitch preview for pending applications */}
-                                  {application.status === 'pending' && (
-                                    <div className="mt-2">
-                                      <p className="text-sm whitespace-pre-line line-clamp-2">
-                                        {application.pitch || 'No pitch provided.'}
-                                      </p>
-                                      <Button 
-                                        size="sm" 
-                                        variant="link" 
-                                        onClick={() => navigate(`/jobs/${job.id}/applications`)}
-                                        className="p-0 h-auto mt-1"
-                                      >
-                                        View full application
-                                      </Button>
-                                    </div>
-                                  )}
+                                  <div className="mt-2">
+                                    <p className="text-sm whitespace-pre-line line-clamp-2">
+                                      {application.pitch || 'No pitch provided.'}
+                                    </p>
+                                    <Button 
+                                      size="sm" 
+                                      variant="link" 
+                                      onClick={() => navigate(`/jobs/${job.id}/applications`)}
+                                      className="p-0 h-auto mt-1"
+                                    >
+                                      View full application
+                                    </Button>
+                                  </div>
                                 </div>
                               ))}
                               

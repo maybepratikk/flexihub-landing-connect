@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/contexts/AuthContext';
@@ -162,20 +161,20 @@ export default function ApplicationsPage() {
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>
-              <CardTitle className="text-2xl">{job.title}</CardTitle>
+              <CardTitle className="text-2xl">{job?.title}</CardTitle>
               <CardDescription>
                 {applications.length} application{applications.length !== 1 ? 's' : ''}
               </CardDescription>
             </div>
-            <Badge variant={job.status === 'open' ? 'default' : 'secondary'}>
-              {job.status === 'open' ? 'Active' : job.status === 'in_progress' ? 'In Progress' : 'Closed'}
+            <Badge variant={job?.status === 'open' ? 'default' : 'secondary'}>
+              {job?.status === 'open' ? 'Active' : job?.status === 'in_progress' ? 'In Progress' : 'Closed'}
             </Badge>
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-sm mb-4">{job.description}</p>
+          <p className="text-sm mb-4">{job?.description}</p>
           <div className="flex flex-wrap gap-2 mb-4">
-            {job.skills_required.map((skill, index) => (
+            {job?.skills_required.map((skill, index) => (
               <Badge key={index} variant="secondary">
                 {skill}
               </Badge>
@@ -183,10 +182,10 @@ export default function ApplicationsPage() {
           </div>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="font-medium">Budget:</span> ${job.budget_min} - ${job.budget_max} {job.budget_type === 'hourly' && '/hr'}
+              <span className="font-medium">Budget:</span> ${job?.budget_min} - ${job?.budget_max} {job?.budget_type === 'hourly' && '/hr'}
             </div>
             <div>
-              <span className="font-medium">Category:</span> {job.category}
+              <span className="font-medium">Category:</span> {job?.category}
             </div>
           </div>
         </CardContent>
@@ -230,7 +229,7 @@ export default function ApplicationsPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="font-medium">Proposed Rate:</span> ${application.proposed_rate} {job.budget_type === 'hourly' && '/hr'}
+                    <span className="font-medium">Proposed Rate:</span> ${application.proposed_rate} {job?.budget_type === 'hourly' && '/hr'}
                   </div>
                 </div>
               </CardHeader>
@@ -270,30 +269,6 @@ export default function ApplicationsPage() {
                           </div>
                         )}
                       </div>
-                    </div>
-                  </>
-                )}
-                
-                {application.freelancer_profiles && (
-                  <>
-                    <Separator />
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      {application.freelancer_profiles.skills && (
-                        <div>
-                          <h3 className="font-semibold mb-2">Skills</h3>
-                          <div className="flex flex-wrap gap-1">
-                            {application.freelancer_profiles.skills.map((skill: string, i: number) => (
-                              <Badge key={i} variant="outline" className="text-xs">{skill}</Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {application.freelancer_profiles.years_experience && (
-                        <div>
-                          <h3 className="font-semibold mb-2">Experience</h3>
-                          <p>{application.freelancer_profiles.years_experience} years</p>
-                        </div>
-                      )}
                     </div>
                   </>
                 )}
