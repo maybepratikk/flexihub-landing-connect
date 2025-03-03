@@ -24,25 +24,28 @@ export function FreelancerDashboard() {
   
   useEffect(() => {
     const loadData = async () => {
-      if (!user) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
       
+      console.log("FreelancerDashboard - Starting to load data for user:", user.id);
       setLoading(true);
       try {
-        console.log("FreelancerDashboard - Loading data for user:", user.id);
-        
         // Get freelancer profile
+        console.log("FreelancerDashboard - Fetching profile for user:", user.id);
         const freelancerProfile = await getFreelancerProfile(user.id);
+        console.log("FreelancerDashboard - Profile loaded:", freelancerProfile);
         setProfile(freelancerProfile);
         
-        // Get freelancer's applications with timestamp to force fresh data
-        const timestamp = new Date().toISOString();
-        console.log(`FreelancerDashboard - Fetching applications with timestamp: ${timestamp}`);
+        // Get freelancer's applications
+        console.log("FreelancerDashboard - Fetching applications for user:", user.id);
         const freelancerApplications = await getFreelancerApplications(user.id);
         console.log("FreelancerDashboard - Applications loaded:", freelancerApplications);
         setApplications(freelancerApplications);
         
-        // Get freelancer's contracts with timestamp to force fresh data
-        console.log(`FreelancerDashboard - Fetching contracts with timestamp: ${timestamp}`);
+        // Get freelancer's contracts
+        console.log("FreelancerDashboard - Fetching contracts for user:", user.id);
         const freelancerContracts = await getFreelancerContracts(user.id);
         console.log("FreelancerDashboard - Contracts loaded:", freelancerContracts);
         setContracts(freelancerContracts);
@@ -55,6 +58,7 @@ export function FreelancerDashboard() {
         });
       } finally {
         setLoading(false);
+        console.log("FreelancerDashboard - Finished loading data");
       }
     };
     
@@ -64,7 +68,7 @@ export function FreelancerDashboard() {
     const intervalId = setInterval(() => {
       console.log("FreelancerDashboard - Performing periodic refresh");
       loadData();
-    }, 10000); // Refresh every 10 seconds
+    }, 30000); // Refresh every 30 seconds
     
     return () => clearInterval(intervalId);
   }, [user, toast]);
@@ -77,21 +81,35 @@ export function FreelancerDashboard() {
     );
   }
   
+  if (!profile) {
+    return (
+      <div className="space-y-4 text-center">
+        <h2 className="text-xl font-semibold">Profile Not Found</h2>
+        <p className="text-muted-foreground">
+          Please complete your onboarding to access the dashboard.
+        </p>
+        <Button onClick={() => navigate('/onboarding')}>
+          Complete Onboarding
+        </Button>
+      </div>
+    );
+  }
+  
   // Count applications by status
-  const pendingApplications = applications.filter(app => app.status === 'pending').length;
-  const acceptedApplications = applications.filter(app => app.status === 'accepted').length;
-  const rejectedApplications = applications.filter(app => app.status === 'rejected').length;
-  const activeContracts = contracts.filter(contract => contract.status === 'active').length;
+  const pendingApplications = applications?.filter(app => app.status === 'pending')?.length || 0;
+  const acceptedApplications = applications?.filter(app => app.status === 'accepted')?.length || 0;
+  const rejectedApplications = applications?.filter(app => app.status === 'rejected')?.length || 0;
+  const activeContracts = contracts?.filter(contract => contract.status === 'active')?.length || 0;
   
   // Find recent status changes (within last 7 days)
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   
-  const recentStatusChanges = applications.filter(app => {
-    const updatedAt = app.updated_at ? new Date(app.updated_at) : null;
-    return (app.status === 'accepted' || app.status === 'rejected') && 
+  const recentStatusChanges = applications?.filter(app => {
+    const updatedAt = app?.updated_at ? new Date(app.updated_at) : null;
+    return (app?.status === 'accepted' || app?.status === 'rejected') && 
            updatedAt && updatedAt > sevenDaysAgo;
-  });
+  }) || [];
   
   return (
     <div className="space-y-8">
@@ -124,8 +142,8 @@ export function FreelancerDashboard() {
               </AlertTitle>
               <AlertDescription>
                 {app.status === 'accepted' 
-                  ? `Your application for "${app.jobs.title}" has been accepted! A contract has been created.` 
-                  : `Your application for "${app.jobs.title}" was not selected.`}
+                  ? `Your application for "${app.jobs?.title}" has been accepted! A contract has been created.` 
+                  : `Your application for "${app.jobs?.title}" was not selected.`}
                 <Button 
                   variant="link" 
                   className="p-0 h-auto"
@@ -229,7 +247,7 @@ export function FreelancerDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {applications.length === 0 ? (
+              {!applications || applications.length === 0 ? (
                 <div className="text-center py-6">
                   <FileCheck className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
                   <p className="text-muted-foreground">You haven't applied to any jobs yet</p>
@@ -245,14 +263,14 @@ export function FreelancerDashboard() {
                         <div>
                           <h3 className="font-semibold text-lg">
                             <Link to={`/jobs/${application.job_id}`} className="hover:underline">
-                              {application.jobs.title}
+                              {application.jobs?.title || 'Unnamed Job'}
                             </Link>
                           </h3>
                           <p className="text-sm text-muted-foreground mb-2">
                             Applied {application.created_at ? formatDistanceToNow(new Date(application.created_at), { addSuffix: true }) : ''}
                           </p>
                           <p className="text-sm">
-                            <strong>Proposed Rate:</strong> ${application.proposed_rate}/{application.jobs.budget_type === 'hourly' ? 'hr' : 'fixed'}
+                            <strong>Proposed Rate:</strong> ${application.proposed_rate}/{application.jobs?.budget_type === 'hourly' ? 'hr' : 'fixed'}
                           </p>
                           <div className="mt-2">
                             <Badge 
@@ -317,7 +335,7 @@ export function FreelancerDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {contracts.length === 0 ? (
+              {!contracts || contracts.length === 0 ? (
                 <div className="text-center py-6">
                   <p className="text-muted-foreground">No contracts found</p>
                 </div>
@@ -328,13 +346,13 @@ export function FreelancerDashboard() {
                       <div className="flex justify-between items-start">
                         <div>
                           <h3 className="font-semibold text-lg">
-                            {contract.jobs?.title}
+                            {contract.jobs?.title || 'Unnamed Job'}
                           </h3>
                           <p className="text-sm text-muted-foreground mb-2">
                             Started {contract.start_date ? formatDistanceToNow(new Date(contract.start_date), { addSuffix: true }) : ''}
                           </p>
                           <p className="text-sm">
-                            <strong>Client:</strong> {contract.profiles?.full_name}
+                            <strong>Client:</strong> {contract.profiles?.full_name || 'Unknown Client'}
                           </p>
                           <p className="text-sm">
                             <strong>Rate:</strong> ${contract.rate}/{contract.jobs?.budget_type === 'hourly' ? 'hr' : 'fixed'}

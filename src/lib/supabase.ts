@@ -456,7 +456,7 @@ export const getFreelancerApplications = async (userId: string) => {
     return data || [];
   } catch (error) {
     console.error('Error in getFreelancerApplications:', error);
-    throw error;
+    return [];
   }
 }
 
@@ -686,9 +686,10 @@ export async function getClientContracts(clientId: string) {
 // Enhanced function to get contracts for a freelancer
 export async function getFreelancerContracts(freelancerId: string) {
   try {
+    console.log(`Getting contracts for freelancer: ${freelancerId}`);
     const { data, error } = await supabase
       .from('contracts')
-      .select('*, jobs!inner(*), profiles!inner(id, full_name, avatar_url)')
+      .select('*, jobs(*), profiles(*)')
       .eq('freelancer_id', freelancerId)
       .order('created_at', { ascending: false });
     
@@ -697,7 +698,8 @@ export async function getFreelancerContracts(freelancerId: string) {
       return [];
     }
     
-    return data;
+    console.log(`Retrieved ${data?.length || 0} contracts for freelancer ${freelancerId}:`, data);
+    return data || [];
   } catch (error) {
     console.error('Exception in getFreelancerContracts:', error);
     return [];
