@@ -25,13 +25,11 @@ export function ClientDashboard() {
   const [jobApplications, setJobApplications] = useState<Record<string, any[]>>({});
   const [loadingApplications, setLoadingApplications] = useState<Record<string, boolean>>({});
   
-  // Parse query parameters to check if we should load applications for a specific job
   const queryParams = new URLSearchParams(location.search);
   const viewParam = queryParams.get('view');
   const jobIdParam = queryParams.get('jobId');
   
   useEffect(() => {
-    // If URL has view=applications and jobId parameter, load applications for that job
     if (viewParam === 'applications' && jobIdParam) {
       setActiveTab('jobs');
       loadJobApplications(jobIdParam);
@@ -44,18 +42,20 @@ export function ClientDashboard() {
       
       setLoading(true);
       try {
-        // Get client profile
         const clientProfile = await getClientProfile(user.id);
         setProfile(clientProfile);
         
-        // Get client's jobs
         const clientJobs = await getClientJobs(user.id);
         console.log("Loaded client jobs:", clientJobs);
         setJobs(clientJobs);
         
-        // Get client's contracts
-        const clientContracts = await getClientContracts(user.id);
-        setContracts(clientContracts);
+        try {
+          const clientContracts = await getClientContracts(user.id);
+          setContracts(clientContracts);
+        } catch (error) {
+          console.error('Error fetching client contracts:', error);
+          setContracts([]);
+        }
       } catch (error) {
         console.error('Error loading client dashboard data:', error);
       } finally {
@@ -95,7 +95,6 @@ export function ClientDashboard() {
       const updatedApplication = await updateApplicationStatus(applicationId, status);
       
       if (updatedApplication) {
-        // Update the applications list
         setJobApplications(prev => ({
           ...prev,
           [jobId]: prev[jobId].map(app => 
@@ -103,13 +102,10 @@ export function ClientDashboard() {
           )
         }));
 
-        // If accepting, create a contract
         if (status === 'accepted') {
           const application = jobApplications[jobId].find(app => app.id === applicationId);
           
           if (application) {
-            // Create a contract
-            console.log("Creating contract for accepted application:", application);
             const contract = await createContract({
               job_id: jobId,
               freelancer_id: application.freelancer_id,
@@ -120,11 +116,9 @@ export function ClientDashboard() {
             });
 
             if (contract) {
-              // Update job status to in_progress
               console.log("Updating job status to in_progress");
               await updateJobStatus(jobId, 'in_progress');
               
-              // Update local job status
               setJobs(prev => prev.map(job => 
                 job.id === jobId ? { ...job, status: 'in_progress' } : job
               ));
@@ -135,7 +129,6 @@ export function ClientDashboard() {
                 variant: "default",
               });
               
-              // Refresh contracts
               const updatedContracts = await getClientContracts(user.id);
               setContracts(updatedContracts);
             }
@@ -157,7 +150,7 @@ export function ClientDashboard() {
       });
     }
   };
-  
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -166,7 +159,6 @@ export function ClientDashboard() {
     );
   }
   
-  // Count jobs by status
   const openJobs = jobs.filter(job => job.status === 'open').length;
   const inProgressJobs = jobs.filter(job => job.status === 'in_progress').length;
   const completedJobs = jobs.filter(job => job.status === 'completed').length;
@@ -302,7 +294,8 @@ export function ClientDashboard() {
                             </Button>
                             <Button 
                               size="sm" 
-                              variant="outline" 
+                              variant="outline"
+                              data-testid="view-applications-button"
                               onClick={() => loadJobApplications(job.id)}
                             >
                               {loadingApplications[job.id] ? (
@@ -315,7 +308,6 @@ export function ClientDashboard() {
                         </div>
                       </div>
                       
-                      {/* Applications section */}
                       {jobApplications[job.id] && (
                         <div className="border-t bg-muted/30 p-4">
                           <h4 className="font-medium mb-3">Applications ({jobApplications[job.id].length})</h4>
