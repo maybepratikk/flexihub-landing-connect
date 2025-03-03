@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -168,7 +169,7 @@ export function FreelancerDashboard() {
                             Applied {application.created_at ? formatDistanceToNow(new Date(application.created_at), { addSuffix: true }) : ''}
                           </p>
                           <p className="text-sm">
-                            <strong>Proposed Rate:</strong> ${application.proposed_rate}/hr
+                            <strong>Proposed Rate:</strong> ${application.proposed_rate}/{application.jobs.budget_type === 'hourly' ? 'hr' : 'fixed'}
                           </p>
                           <div className="mt-2">
                             <Badge 
@@ -232,7 +233,11 @@ export function FreelancerDashboard() {
                             </Badge>
                           </div>
                         </div>
-                        <Button size="sm" variant="outline">View Details</Button>
+                        <Button size="sm" variant="outline" asChild>
+                          <Link to={`/contracts/${contract.id}`}>
+                            View Details
+                          </Link>
+                        </Button>
                       </div>
                     </div>
                   ))}

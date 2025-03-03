@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 // Get environment variables for Supabase connection
@@ -51,8 +50,8 @@ export type Job = {
   budget_min?: number;
   budget_max?: number;
   budget_type: 'fixed' | 'hourly';
-  duration?: 'short' | 'medium' | 'long';
-  experience_level?: 'entry' | 'intermediate' | 'expert';
+  duration?: 'short' | 'medium' | 'long' | null;
+  experience_level?: 'entry' | 'intermediate' | 'expert' | null;
   status: 'open' | 'in_progress' | 'completed' | 'cancelled';
   created_at?: string;
   updated_at?: string;
@@ -63,6 +62,7 @@ export type JobApplication = {
   job_id: string;
   freelancer_id: string;
   cover_letter?: string;
+  pitch?: string;
   proposed_rate?: number;
   status: 'pending' | 'accepted' | 'rejected';
   created_at?: string;
@@ -80,6 +80,15 @@ export type Contract = {
   status: 'active' | 'completed' | 'terminated';
   created_at?: string;
   updated_at?: string;
+};
+
+export type ChatMessage = {
+  id: string;
+  contract_id: string;
+  sender_id: string;
+  message: string;
+  created_at?: string;
+  read: boolean;
 };
 
 // Function to get user profile
@@ -267,8 +276,10 @@ export async function getClientJobs(clientId: string) {
   return data;
 }
 
-// Function to apply for a job
-export async function applyForJob(application: Omit<JobApplication, 'id' | 'status' | 'created_at' | 'updated_at'>) {
+// Enhanced function to apply for a job with a pitch
+export async function applyForJobWithPitch(application: Omit<JobApplication, 'id' | 'status' | 'created_at' | 'updated_at'>) {
+  console.log("Applying for job with data:", application);
+  
   const { data, error } = await supabase
     .from('job_applications')
     .insert({
@@ -353,7 +364,7 @@ export async function createContract(contractData: Omit<Contract, 'id' | 'create
 export async function getClientContracts(clientId: string) {
   const { data, error } = await supabase
     .from('contracts')
-    .select('*, jobs!inner(*), profiles!freelancer_id(full_name, avatar_url)')
+    .select('*, jobs!inner(*), profiles!freelancer_id(id, full_name, avatar_url), profiles!client_id(id, full_name, avatar_url)')
     .eq('client_id', clientId);
   
   if (error) {
@@ -368,12 +379,131 @@ export async function getClientContracts(clientId: string) {
 export async function getFreelancerContracts(freelancerId: string) {
   const { data, error } = await supabase
     .from('contracts')
-    .select('*, jobs!inner(*), profiles!client_id(full_name, avatar_url)')
+    .select('*, jobs!inner(*), profiles!client_id(id, full_name, avatar_url)')
     .eq('freelancer_id', freelancerId);
   
   if (error) {
     console.error('Error fetching freelancer contracts:', error);
     return [];
+  }
+  
+  return data;
+}
+
+// Function to get a specific application
+export async function getApplicationById(applicationId: string) {
+  const { data, error } = await supabase
+    .from('job_applications')
+    .select('*, profiles!inner(*), freelancer_profiles!inner(*)')
+    .eq('id', applicationId)
+    .single();
+  
+  if (error) {
+    console.error('Error fetching application:', error);
+    return null;
+  }
+  
+  return data;
+}
+
+// Function to get a specific contract
+export async function getContractById(contractId: string) {
+  const { data, error } = await supabase
+    .from('contracts')
+    .select('*, jobs!inner(*), profiles!freelancer_id(id, full_name, avatar_url), profiles!client_id(id, full_name, avatar_url)')
+    .eq('id', contractId)
+    .single();
+  
+  if (error) {
+    console.error('Error fetching contract:', error);
+    return null;
+  }
+  
+  return data;
+}
+
+// Function to send a chat message
+export async function sendChatMessage(contractId: string, senderId: string, message: string) {
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .insert({
+      contract_id: contractId,
+      sender_id: senderId,
+      message,
+      read: false
+    })
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error sending chat message:', error);
+    return null;
+  }
+  
+  return data;
+}
+
+// Function to get chat messages for a contract
+export async function getChatMessages(contractId: string) {
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .select('*, profiles!inner(full_name, avatar_url)')
+    .eq('contract_id', contractId)
+    .order('created_at', { ascending: true });
+  
+  if (error) {
+    console.error('Error fetching chat messages:', error);
+    return [];
+  }
+  
+  return data;
+}
+
+// Function to mark messages as read
+export async function markMessagesAsRead(contractId: string, userId: string) {
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .update({ read: true })
+    .eq('contract_id', contractId)
+    .neq('sender_id', userId);
+  
+  if (error) {
+    console.error('Error marking messages as read:', error);
+    return null;
+  }
+  
+  return data;
+}
+
+// Function to check if a user has applied to a job
+export async function hasAppliedToJob(jobId: string, freelancerId: string) {
+  const { data, error } = await supabase
+    .from('job_applications')
+    .select('id, status')
+    .eq('job_id', jobId)
+    .eq('freelancer_id', freelancerId)
+    .maybeSingle();
+  
+  if (error) {
+    console.error('Error checking application status:', error);
+    return null;
+  }
+  
+  return data;
+}
+
+// Function to update a job's status
+export async function updateJobStatus(jobId: string, status: 'open' | 'in_progress' | 'completed' | 'cancelled') {
+  const { data, error } = await supabase
+    .from('jobs')
+    .update({ status })
+    .eq('id', jobId)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error updating job status:', error);
+    return null;
   }
   
   return data;

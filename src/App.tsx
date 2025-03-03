@@ -1,58 +1,48 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { Routes, Route } from 'react-router-dom';
+import { Toaster } from '@/components/ui/toaster';
+import { LandingPage } from '@/pages/LandingPage';
+import { SignInPage } from '@/pages/SignInPage';
+import { SignUpPage } from '@/pages/SignUpPage';
+import { DashboardPage } from '@/pages/DashboardPage';
+import { OnboardingPage } from '@/pages/OnboardingPage';
+import { NotFound } from '@/pages/NotFound';
+import { PostJobPage } from '@/pages/PostJobPage';
+import { JobDetailPage } from '@/pages/JobDetailPage';
+import { JobsPage } from '@/pages/JobsPage';
+import { ApplicationsPage } from '@/pages/ApplicationsPage';
+import { ContractPage } from '@/pages/ContractPage';
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
+import { VerificationSentPage } from '@/pages/VerificationSentPage';
+import { MainLayout } from './components/layout/MainLayout';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import './App.css';
 
-// Pages
-import LandingPage from "./pages/LandingPage";
-import SignInPage from "./pages/SignInPage";
-import SignUpPage from "./pages/SignUpPage";
-import VerificationSentPage from "./pages/VerificationSentPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import OnboardingPage from "./pages/OnboardingPage";
-import DashboardPage from "./pages/DashboardPage";
-import HomePage from "./pages/HomePage";
-import PostJobPage from "./pages/PostJobPage";
-import JobDetailPage from "./pages/JobDetailPage";
-import NotFound from "./pages/NotFound";
-
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/signin" element={<SignInPage />} />
-            <Route path="/signup" element={<SignUpPage />} />
-            <Route path="/verification-sent" element={<VerificationSentPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/jobs" element={<HomePage />} />
-            <Route path="/jobs/:jobId" element={<JobDetailPage />} />
-            
-            {/* Protected Routes */}
+export default function App() {
+  return (
+    <>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/verification-sent" element={<VerificationSentPage />} />
+        
+        <Route element={<ProtectedRoute />}>
+          <Route element={<MainLayout />}>
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/post-job" element={<PostJobPage />} />
-            
-            {/* Redirect index to the landing page */}
-            <Route path="/index" element={<Navigate to="/" replace />} />
-            
-            {/* 404 Route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
-
-export default App;
+            <Route path="/jobs" element={<JobsPage />} />
+            <Route path="/jobs/:jobId" element={<JobDetailPage />} />
+            <Route path="/jobs/:jobId/applications" element={<ApplicationsPage />} />
+            <Route path="/contracts/:contractId" element={<ContractPage />} />
+          </Route>
+        </Route>
+        
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <Toaster />
+    </>
+  );
+}
