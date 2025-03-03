@@ -1,241 +1,182 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { AuthContext } from '@/contexts/AuthContext';
+import { 
+  getContractById,
+  Contract
+} from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { formatDistanceToNow, format } from 'date-fns';
+import { useToast } from '@/components/ui/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { ChatInterface } from '@/components/chat/ChatInterface';
-import { getContractById } from '@/lib/supabase';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, User, Calendar, DollarSign, Briefcase } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
 
-export function ContractPage() {
+export default function ContractPage() {
   const { contractId } = useParams<{ contractId: string }>();
-  const { user } = useAuth();
+  const { user } = useContext(AuthContext);
+  const [contract, setContract] = useState<Contract | null>(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
-  
-  const [loading, setLoading] = useState(true);
-  const [contract, setContract] = useState<any>(null);
-  
+
   useEffect(() => {
-    const loadContract = async () => {
-      if (!contractId || !user) return;
-      
+    if (!contractId || !user) return;
+
+    const fetchContract = async () => {
       setLoading(true);
-      try {
-        const contractData = await getContractById(contractId);
-        
-        if (!contractData) {
-          toast({
-            title: 'Contract not found',
-            description: 'The contract you are looking for does not exist',
-            variant: 'destructive'
-          });
-          navigate('/dashboard');
-          return;
-        }
-        
-        // Check if user is part of this contract
-        if (contractData.client_id !== user.id && contractData.freelancer_id !== user.id) {
-          toast({
-            title: 'Unauthorized',
-            description: 'You do not have permission to view this contract',
-            variant: 'destructive'
-          });
-          navigate('/dashboard');
-          return;
-        }
-        
-        setContract(contractData);
-      } catch (error) {
-        console.error('Error loading contract:', error);
+      const fetchedContract = await getContractById(contractId);
+      
+      if (fetchedContract && (fetchedContract.client_id === user.id || fetchedContract.freelancer_id === user.id)) {
+        setContract(fetchedContract);
+      } else {
+        // Redirect if not authorized
+        navigate('/dashboard');
         toast({
-          title: 'Error',
-          description: 'Failed to load contract',
-          variant: 'destructive'
+          title: "Access Denied",
+          description: "You don't have permission to view this contract.",
+          variant: "destructive",
         });
-      } finally {
-        setLoading(false);
       }
+      
+      setLoading(false);
     };
-    
-    loadContract();
+
+    fetchContract();
   }, [contractId, user, navigate, toast]);
-  
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-        <main className="container mx-auto px-4 py-8">
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        </main>
+      <div className="container mx-auto py-10 flex justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
-  
+
   if (!contract) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-        <main className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-2">Contract Not Found</h2>
-            <p className="text-muted-foreground mb-6">
-              The contract you're looking for doesn't exist or has been removed
-            </p>
-            <Button onClick={() => navigate('/dashboard')}>
-              Return to Dashboard
-            </Button>
-          </div>
-        </main>
+      <div className="container mx-auto py-10">
+        <h1 className="text-2xl font-bold mb-4">Contract not found</h1>
+        <Button onClick={() => navigate('/dashboard')}>Back to Dashboard</Button>
       </div>
     );
   }
-  
+
   const isClient = user?.id === contract.client_id;
-  const otherUser = isClient 
-    ? contract.profiles.freelancer_id 
-    : contract.profiles.client_id;
-  const otherUserName = isClient 
-    ? contract.profiles.freelancer_id.full_name 
-    : contract.profiles.client_id.full_name;
-  const otherUserAvatar = isClient 
-    ? contract.profiles.freelancer_id.avatar_url 
-    : contract.profiles.client_id.avatar_url;
-  
+  const otherParty = isClient ? contract.profiles?.freelancer_id : contract.profiles?.client_id;
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
-            Back
-          </Button>
+    <div className="container mx-auto py-10">
+      <Button variant="outline" onClick={() => navigate('/dashboard')} className="mb-6">
+        Back to Dashboard
+      </Button>
+
+      <div className="grid md:grid-cols-3 gap-6">
+        <div className="md:col-span-1 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Contract Details</CardTitle>
+              <CardDescription>
+                Created {contract.created_at && formatDistanceToNow(new Date(contract.created_at), { addSuffix: true })}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold mb-1">Status</h3>
+                <Badge variant={
+                  contract.status === 'active' ? 'default' : 
+                  contract.status === 'completed' ? 'success' : 
+                  'secondary'
+                }>
+                  {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
+                </Badge>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-semibold mb-1">Rate</h3>
+                <p className="text-lg font-medium">
+                  ${contract.rate}{contract.jobs?.budget_type === 'hourly' ? '/hr' : ' (fixed)'}
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-semibold mb-1">Start Date</h3>
+                <p>{contract.start_date && format(new Date(contract.start_date), 'PPP')}</p>
+              </div>
+              
+              {contract.end_date && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-1">End Date</h3>
+                  <p>{format(new Date(contract.end_date), 'PPP')}</p>
+                </div>
+              )}
+              
+              <Separator />
+              
+              <div>
+                <h3 className="text-sm font-semibold mb-1">Job</h3>
+                {contract.jobs && (
+                  <div className="mt-2">
+                    <h4 className="font-medium">{contract.jobs.title}</h4>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {contract.jobs.description.substring(0, 100)}...
+                    </p>
+                    <Button 
+                      variant="link" 
+                      className="p-0 h-auto mt-1"
+                      onClick={() => navigate(`/jobs/${contract.jobs?.id}`)}
+                    >
+                      View Job Details
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
+              <Separator />
+              
+              <div>
+                <h3 className="text-sm font-semibold mb-1">
+                  {isClient ? 'Freelancer' : 'Client'}
+                </h3>
+                {otherParty && (
+                  <div className="flex items-center space-x-2 mt-2">
+                    <Avatar>
+                      <AvatarImage src={otherParty.avatar_url || ''} />
+                      <AvatarFallback>{otherParty.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{otherParty.full_name}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-2xl">{contract.jobs.title}</CardTitle>
-                    <CardDescription>
-                      Contract {contract.status}
-                    </CardDescription>
-                  </div>
-                  <Badge variant={
-                    contract.status === 'active' ? 'default' : 
-                    contract.status === 'completed' ? 'outline' : 'destructive'
-                  }>
-                    {contract.status.toUpperCase()}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-start gap-3">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <h3 className="font-medium">Start Date</h3>
-                      <p>{format(new Date(contract.start_date), 'PPP')}</p>
-                    </div>
-                  </div>
-                  
-                  {contract.end_date && (
-                    <div className="flex items-start gap-3">
-                      <Calendar className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <h3 className="font-medium">End Date</h3>
-                        <p>{format(new Date(contract.end_date), 'PPP')}</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-start gap-3">
-                    <DollarSign className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <h3 className="font-medium">Rate</h3>
-                      <p>
-                        ${contract.rate}
-                        {contract.jobs.budget_type === 'hourly' ? '/hr' : ' total'}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-3">
-                    <Briefcase className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <h3 className="font-medium">Job Type</h3>
-                      <p>
-                        {contract.jobs.budget_type === 'hourly' ? 'Hourly Rate' : 'Fixed Price'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div>
-                  <h3 className="font-semibold mb-2">Job Description</h3>
-                  <div className="text-muted-foreground whitespace-pre-line">
-                    {contract.jobs.description}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <ChatInterface 
-              contractId={contract.id} 
-              otherUserName={otherUserName} 
-              otherUserAvatar={otherUserAvatar}
-            />
-          </div>
-          
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>{isClient ? 'Freelancer' : 'Client'}</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <Avatar className="h-20 w-20 mx-auto mb-4">
-                  <AvatarImage src={otherUserAvatar || ''} alt={otherUserName} />
-                  <AvatarFallback>
-                    <User className="h-10 w-10" />
-                  </AvatarFallback>
-                </Avatar>
-                <h3 className="text-xl font-semibold">{otherUserName}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {isClient ? 'Freelancer' : 'Client'}
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Contract Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p>
-                  <strong>Status:</strong> {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
-                </p>
-                <p>
-                  <strong>Duration:</strong> {formatDistanceToNow(new Date(contract.start_date), { addSuffix: false })}
-                </p>
-                {contract.jobs.category && (
-                  <p>
-                    <strong>Category:</strong> {contract.jobs.category}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+        <div className="md:col-span-2">
+          <Card className="h-full">
+            <CardHeader className="pb-3">
+              <CardTitle>Messages</CardTitle>
+              <CardDescription>
+                Communicate with {isClient ? 'your freelancer' : 'the client'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-[600px] p-0">
+              {contract && user && (
+                <ChatInterface 
+                  contractId={contract.id} 
+                  currentUserId={user.id}
+                  otherPartyName={otherParty?.full_name || 'User'}
+                />
+              )}
+            </CardContent>
+          </Card>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

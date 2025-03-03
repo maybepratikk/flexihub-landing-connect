@@ -1,379 +1,304 @@
 
-import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect, useContext } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { AuthContext } from '@/contexts/AuthContext';
+import { 
+  getJobById, 
+  applyForJobWithPitch, 
+  hasAppliedToJob,
+  Job,
+  JobApplication
+} from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { getJobById, applyForJob } from '@/lib/supabase';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, Calendar, Clock, DollarSign, Award, User, Briefcase } from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { formatDistanceToNow } from 'date-fns';
+import { useToast } from '@/components/ui/use-toast';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
-const JobDetailPage = () => {
+const applicationSchema = z.object({
+  cover_letter: z.string().min(10, {
+    message: "Cover letter must be at least 10 characters.",
+  }),
+  pitch: z.string().min(10, {
+    message: "Pitch must be at least 10 characters.",
+  }),
+  proposed_rate: z.coerce.number().min(5, {
+    message: "Proposed rate must be at least $5.",
+  }),
+});
+
+type ApplicationFormData = z.infer<typeof applicationSchema>;
+
+export default function JobDetailPage() {
   const { jobId } = useParams<{ jobId: string }>();
-  const { user } = useAuth();
+  const { user } = useContext(AuthContext);
+  const [job, setJob] = useState<Job | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showApplicationForm, setShowApplicationForm] = useState(false);
+  const [hasApplied, setHasApplied] = useState<{ id?: string, status?: string } | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
-  
-  const [loading, setLoading] = useState(true);
-  const [job, setJob] = useState<any>(null);
-  const [applying, setApplying] = useState(false);
-  const [showApplicationForm, setShowApplicationForm] = useState(false);
-  
-  // Application form state
-  const [coverLetter, setCoverLetter] = useState('');
-  const [proposedRate, setProposedRate] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  
+
+  const form = useForm<ApplicationFormData>({
+    resolver: zodResolver(applicationSchema),
+    defaultValues: {
+      cover_letter: "",
+      pitch: "",
+      proposed_rate: 0,
+    },
+  });
+
   useEffect(() => {
-    const loadJob = async () => {
-      if (!jobId) return;
-      
+    if (!jobId) return;
+
+    const fetchJob = async () => {
       setLoading(true);
-      try {
-        const jobData = await getJobById(jobId);
-        setJob(jobData);
-      } catch (error) {
-        console.error('Error loading job:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load job details',
-          variant: 'destructive'
-        });
-      } finally {
-        setLoading(false);
+      const fetchedJob = await getJobById(jobId);
+      setJob(fetchedJob);
+      
+      if (user && fetchedJob) {
+        // Check if user has already applied
+        const application = await hasAppliedToJob(jobId, user.id);
+        setHasApplied(application);
       }
+      
+      setLoading(false);
     };
-    
-    loadJob();
-  }, [jobId, toast]);
-  
-  const handleApply = () => {
-    if (!user) {
-      toast({
-        title: 'Authentication Required',
-        description: 'You need to sign in to apply for jobs',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    if (user.user_metadata?.user_type !== 'freelancer') {
-      toast({
-        title: 'Action Not Allowed',
-        description: 'Only freelancers can apply for jobs',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    setShowApplicationForm(true);
-  };
-  
-  const submitApplication = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user || !jobId) return;
-    
-    setSubmitting(true);
-    
+
+    fetchJob();
+  }, [jobId, user]);
+
+  const onSubmit = async (data: ApplicationFormData) => {
+    if (!user || !job) return;
+
     try {
-      const application = {
-        job_id: jobId,
+      const application = await applyForJobWithPitch({
+        job_id: job.id,
         freelancer_id: user.id,
-        cover_letter: coverLetter,
-        proposed_rate: proposedRate ? parseFloat(proposedRate) : undefined
-      };
-      
-      const result = await applyForJob(application);
-      
-      if (result) {
-        toast({
-          title: 'Application Submitted',
-          description: 'Your application has been submitted successfully',
-        });
+        cover_letter: data.cover_letter,
+        pitch: data.pitch,
+        proposed_rate: data.proposed_rate
+      });
+
+      if (application) {
+        setHasApplied({ id: application.id, status: application.status });
         setShowApplicationForm(false);
-        setApplying(true);
-      } else {
-        throw new Error('Failed to submit application');
+        toast({
+          title: "Application Submitted",
+          description: "Your application has been submitted successfully.",
+          variant: "default",
+        });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error submitting application:', error);
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to submit application',
-        variant: 'destructive'
+        title: "Error",
+        description: "There was an error submitting your application. Please try again.",
+        variant: "destructive",
       });
-    } finally {
-      setSubmitting(false);
     }
   };
-  
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-        <main className="container mx-auto px-4 py-8">
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        </main>
+      <div className="container mx-auto py-10 flex justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
-  
+
   if (!job) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-        <main className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-2">Job Not Found</h2>
-            <p className="text-muted-foreground mb-6">
-              The job you're looking for doesn't exist or has been removed
-            </p>
-            <Button asChild>
-              <Link to="/jobs">Browse All Jobs</Link>
-            </Button>
-          </div>
-        </main>
+      <div className="container mx-auto py-10">
+        <h1 className="text-2xl font-bold mb-4">Job not found</h1>
+        <Button onClick={() => navigate('/jobs')}>Back to Jobs</Button>
       </div>
     );
   }
-  
-  const isOwner = user && user.id === job.client_id;
-  const isFreelancer = user && user.user_metadata?.user_type === 'freelancer';
-  
+
+  const isClient = user?.user_type === 'client';
+  const isJobOwner = job.client_id === user?.id;
+  const canApply = user?.user_type === 'freelancer' && !isJobOwner && !hasApplied;
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
-            Back to Jobs
-          </Button>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-2xl">{job.title}</CardTitle>
-                    <CardDescription>
-                      Posted by {job.profiles.full_name} • {job.created_at ? formatDistanceToNow(new Date(job.created_at), { addSuffix: true }) : ''}
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">{job.category}</Badge>
-                  <Badge variant={job.budget_type === 'fixed' ? 'outline' : 'default'}>
-                    {job.budget_type === 'fixed' ? 'Fixed Price' : 'Hourly Rate'}
-                  </Badge>
-                  {job.experience_level && (
-                    <Badge variant="outline">
-                      {job.experience_level === 'entry' ? 'Entry Level' : 
-                       job.experience_level === 'intermediate' ? 'Intermediate' : 'Expert'}
-                    </Badge>
-                  )}
-                </div>
-                
-                <Separator />
-                
-                <div>
-                  <h3 className="font-semibold mb-2">Job Description</h3>
-                  <div className="text-muted-foreground whitespace-pre-line">
-                    {job.description}
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div>
-                  <h3 className="font-semibold mb-2">Skills Required</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {job.skills_required && job.skills_required.map((skill: string, index: number) => (
-                      <Badge key={index} variant="outline">{skill}</Badge>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {showApplicationForm && isFreelancer && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Apply for this Job</CardTitle>
-                  <CardDescription>
-                    Tell the client why you're a good fit for this project
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={submitApplication} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1" htmlFor="coverLetter">
-                        Cover Letter
-                      </label>
-                      <Textarea
-                        id="coverLetter"
-                        placeholder="Introduce yourself and explain why you're suitable for this job..."
-                        className="min-h-[150px]"
-                        value={coverLetter}
-                        onChange={(e) => setCoverLetter(e.target.value)}
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium mb-1" htmlFor="proposedRate">
-                        Proposed Rate ({job.budget_type === 'fixed' ? 'Total' : 'Hourly'} in $)
-                      </label>
-                      <Input
-                        id="proposedRate"
-                        type="number"
-                        placeholder={job.budget_type === 'fixed' ? 'Your total price' : 'Your hourly rate'}
-                        value={proposedRate}
-                        onChange={(e) => setProposedRate(e.target.value)}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="flex justify-end gap-2">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={() => setShowApplicationForm(false)}
-                        disabled={submitting}
-                      >
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={submitting}>
-                        {submitting ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Submitting...
-                          </>
-                        ) : (
-                          'Submit Application'
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            )}
+    <div className="container mx-auto py-10">
+      <Button variant="outline" onClick={() => navigate('/jobs')} className="mb-6">
+        Back to Jobs
+      </Button>
+
+      <Card className="mb-8">
+        <CardHeader>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="text-2xl">{job.title}</CardTitle>
+              <CardDescription>Posted {job.created_at && formatDistanceToNow(new Date(job.created_at), { addSuffix: true })}</CardDescription>
+            </div>
+            <Badge variant={job.budget_type === 'fixed' ? 'outline' : 'default'}>
+              {job.budget_type === 'fixed' ? 'Fixed' : 'Hourly'}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div>
+            <h3 className="font-semibold mb-2">Description</h3>
+            <p className="whitespace-pre-line">{job.description}</p>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-2">Skills Required</h3>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {job.skills_required.map((skill, index) => (
+                <Badge key={index} variant="secondary">
+                  {skill}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <h3 className="font-semibold mb-2">Budget</h3>
+              <p>${job.budget_min} - ${job.budget_max} {job.budget_type === 'hourly' && '/hr'}</p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Duration</h3>
+              <p>{job.duration ? job.duration.charAt(0).toUpperCase() + job.duration.slice(1) + ' term' : 'Not specified'}</p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Experience Level</h3>
+              <p>{job.experience_level ? job.experience_level.charAt(0).toUpperCase() + job.experience_level.slice(1) : 'Not specified'}</p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Category</h3>
+              <p>{job.category}</p>
+            </div>
           </div>
           
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Job Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <DollarSign className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <h3 className="font-medium">Budget</h3>
-                    <p>
-                      ${job.budget_min} - ${job.budget_max}
-                      {job.budget_type === 'hourly' && '/hr'}
-                    </p>
-                  </div>
-                </div>
+          {job.profiles && (
+            <div className="mt-6">
+              <h3 className="font-semibold mb-2">Posted by</h3>
+              <div className="flex items-center gap-2">
+                <Avatar>
+                  <AvatarImage src={job.profiles.avatar_url || ''} />
+                  <AvatarFallback>{job.profiles.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                </Avatar>
+                <span>{job.profiles.full_name}</span>
+              </div>
+            </div>
+          )}
+        </CardContent>
+        <CardFooter>
+          {canApply && (
+            <>
+              {showApplicationForm ? (
+                <Button variant="outline" onClick={() => setShowApplicationForm(false)}>
+                  Cancel Application
+                </Button>
+              ) : (
+                <Button onClick={() => setShowApplicationForm(true)}>
+                  Apply for this Job
+                </Button>
+              )}
+            </>
+          )}
+          
+          {hasApplied && (
+            <div className="text-muted-foreground">
+              You have already applied to this job. Status: {hasApplied.status}
+            </div>
+          )}
+          
+          {isJobOwner && (
+            <Button onClick={() => navigate(`/jobs/${job.id}/applications`)}>
+              View Applications
+            </Button>
+          )}
+        </CardFooter>
+      </Card>
+      
+      {showApplicationForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Apply for this Job</CardTitle>
+            <CardDescription>Please complete the application form below.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="cover_letter"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cover Letter</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Introduce yourself and explain why you're interested in this job."
+                          className="min-h-[120px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                {job.duration && (
-                  <div className="flex items-start gap-3">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <h3 className="font-medium">Duration</h3>
-                      <p>
-                        {job.duration === 'short' ? 'Short Term (< 1 month)' : 
-                         job.duration === 'medium' ? 'Medium Term (1-3 months)' : 'Long Term (3+ months)'}
-                      </p>
-                    </div>
-                  </div>
-                )}
+                <FormField
+                  control={form.control}
+                  name="pitch"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pitch Yourself</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Describe your relevant experience and why you're the best fit for this job. You can include links to your portfolio, previous work, or testimonials."
+                          className="min-h-[200px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                {job.experience_level && (
-                  <div className="flex items-start gap-3">
-                    <Award className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <h3 className="font-medium">Experience Level</h3>
-                      <p>
-                        {job.experience_level === 'entry' ? 'Entry Level' : 
-                         job.experience_level === 'intermediate' ? 'Intermediate' : 'Expert'}
-                      </p>
-                    </div>
-                  </div>
-                )}
+                <FormField
+                  control={form.control}
+                  name="proposed_rate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Proposed Rate {job.budget_type === 'hourly' ? '(per hour)' : '(fixed)'}</FormLabel>
+                      <FormControl>
+                        <div className="flex items-center">
+                          <span className="mr-2">$</span>
+                          <Input type="number" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                <div className="flex items-start gap-3">
-                  <User className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <h3 className="font-medium">Posted By</h3>
-                    <p>{job.profiles.full_name}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <Clock className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <h3 className="font-medium">Posted On</h3>
-                    <p>
-                      {job.created_at ? format(new Date(job.created_at), 'PPP') : ''}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                {isOwner ? (
-                  <Button className="w-full" variant="outline" asChild>
-                    <Link to={`/jobs/${job.id}/applications`}>
-                      View Applications
-                    </Link>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" type="button" onClick={() => setShowApplicationForm(false)}>
+                    Cancel
                   </Button>
-                ) : isFreelancer ? (
-                  applying ? (
-                    <Button className="w-full" variant="secondary" disabled>
-                      Applied
-                    </Button>
-                  ) : (
-                    <Button 
-                      className="w-full" 
-                      onClick={handleApply}
-                      disabled={showApplicationForm}
-                    >
-                      Apply Now
-                    </Button>
-                  )
-                ) : (
-                  <Button className="w-full" onClick={() => navigate('/signup')}>
-                    Sign Up to Apply
+                  <Button type="submit">
+                    Submit Application
                   </Button>
-                )}
-              </CardFooter>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>About the Client</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm space-y-2">
-                <p>
-                  <span className="font-medium">Name:</span> {job.profiles.full_name}
-                </p>
-                {/* We could add more client details here in the future */}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </main>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
-};
-
-export default JobDetailPage;
+}
