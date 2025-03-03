@@ -2,6 +2,7 @@
 import { JobApplyForm, ApplicationFormData } from './shared/JobApplyForm';
 import { Job } from '@/lib/supabase';
 import { ApplicationStatus } from './shared/ApplicationStatus';
+import { useState } from 'react';
 
 interface JobSidebarContentProps {
   job: Job;
@@ -20,13 +21,27 @@ export function JobSidebarContent({
   onCancelApplication,
   userEmail
 }: JobSidebarContentProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (data: ApplicationFormData) => {
+    try {
+      setIsSubmitting(true);
+      console.log("JobSidebarContent - submitting form data:", data);
+      await onSubmitApplication(data);
+    } catch (error) {
+      console.error("Error in JobSidebarContent submit:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="flex-1 overflow-auto p-4">
       {showApplicationForm ? (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Apply for this Job</h3>
           <JobApplyForm
-            onSubmit={onSubmitApplication}
+            onSubmit={handleSubmit}
             onCancel={onCancelApplication}
             budgetType={job.budget_type as 'fixed' | 'hourly'}
             defaultEmail={userEmail || ''}

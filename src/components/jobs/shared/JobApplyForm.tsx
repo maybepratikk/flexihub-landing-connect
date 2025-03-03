@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useState } from 'react';
 
 const applicationSchema = z.object({
   cover_letter: z.string().min(10, {
@@ -35,6 +36,8 @@ interface JobApplyFormProps {
 }
 
 export function JobApplyForm({ onSubmit, onCancel, budgetType, defaultEmail = '' }: JobApplyFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const form = useForm<ApplicationFormData>({
     resolver: zodResolver(applicationSchema),
     defaultValues: {
@@ -42,13 +45,26 @@ export function JobApplyForm({ onSubmit, onCancel, budgetType, defaultEmail = ''
       pitch: "",
       proposed_rate: 0,
       phone: "",
-      email: defaultEmail,
+      email: defaultEmail || "",
     },
   });
 
+  const handleSubmit = async (data: ApplicationFormData) => {
+    try {
+      setIsSubmitting(true);
+      console.log("Submitting application data:", data);
+      await onSubmit(data);
+      console.log("Application submitted successfully");
+    } catch (error) {
+      console.error("Error submitting application:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="cover_letter"
@@ -126,7 +142,7 @@ export function JobApplyForm({ onSubmit, onCancel, budgetType, defaultEmail = ''
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="Enter your email" {...field} />
+                    <Input type="email" placeholder="Enter your email" {...field} defaultValue={defaultEmail} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -139,11 +155,11 @@ export function JobApplyForm({ onSubmit, onCancel, budgetType, defaultEmail = ''
         </div>
         
         <div className="flex justify-end space-x-2 pt-4">
-          <Button variant="outline" type="button" onClick={onCancel}>
+          <Button variant="outline" type="button" onClick={onCancel} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit">
-            Submit Application
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : "Submit Application"}
           </Button>
         </div>
       </form>

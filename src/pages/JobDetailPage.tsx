@@ -19,6 +19,7 @@ export default function JobDetailPage() {
   const { user } = useAuth();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [hasApplied, setHasApplied] = useState<{ id?: string, status?: string } | null>(null);
   const navigate = useNavigate();
@@ -53,9 +54,30 @@ export default function JobDetailPage() {
   }, [jobId, user]);
 
   const onSubmit = async (data: ApplicationFormData) => {
-    if (!user || !job) return;
+    if (!user || !job) {
+      console.error("Cannot submit application: user or job is null");
+      toast({
+        title: "Error",
+        description: "You must be logged in to apply for jobs.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log("Starting application submission from detail page with data:", data);
+    setSubmitting(true);
 
     try {
+      console.log("Applying with data:", {
+        job_id: job.id,
+        freelancer_id: user.id,
+        cover_letter: data.cover_letter,
+        pitch: data.pitch,
+        proposed_rate: data.proposed_rate,
+        contact_phone: data.phone,
+        contact_email: data.email
+      });
+
       const application = await applyForJobWithPitch({
         job_id: job.id,
         freelancer_id: user.id,
@@ -66,6 +88,8 @@ export default function JobDetailPage() {
         contact_email: data.email
       });
 
+      console.log("Application submission response:", application);
+
       if (application) {
         setHasApplied({ id: application.id, status: application.status });
         setShowApplicationForm(false);
@@ -74,6 +98,8 @@ export default function JobDetailPage() {
           description: "Your application has been submitted successfully.",
           variant: "default",
         });
+      } else {
+        throw new Error("No application data returned from server");
       }
     } catch (error) {
       console.error('Error submitting application:', error);
@@ -82,6 +108,8 @@ export default function JobDetailPage() {
         description: "There was an error submitting your application. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 

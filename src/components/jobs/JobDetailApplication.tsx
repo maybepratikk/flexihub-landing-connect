@@ -1,6 +1,7 @@
 
 import { Card, CardHeader, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
 import { JobApplyForm, ApplicationFormData } from './shared/JobApplyForm';
+import { useState } from 'react';
 
 interface JobDetailApplicationProps {
   onSubmit: (data: ApplicationFormData) => Promise<void>;
@@ -10,6 +11,20 @@ interface JobDetailApplicationProps {
 }
 
 export function JobDetailApplication({ onSubmit, onCancel, budgetType, userEmail }: JobDetailApplicationProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (data: ApplicationFormData) => {
+    try {
+      setIsSubmitting(true);
+      console.log("JobDetailApplication - submitting form data:", data);
+      await onSubmit(data);
+    } catch (error) {
+      console.error("Error in JobDetailApplication submit:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -18,7 +33,7 @@ export function JobDetailApplication({ onSubmit, onCancel, budgetType, userEmail
       </CardHeader>
       <CardContent>
         <JobApplyForm 
-          onSubmit={onSubmit} 
+          onSubmit={handleSubmit} 
           onCancel={onCancel} 
           budgetType={budgetType}
           defaultEmail={userEmail || ''}

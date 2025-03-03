@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 // Get environment variables for Supabase connection
@@ -348,21 +347,32 @@ export async function getClientJobs(clientId: string) {
 export async function applyForJobWithPitch(application: Omit<JobApplication, 'id' | 'status' | 'created_at' | 'updated_at'>) {
   console.log("Applying for job with data:", application);
   
-  const { data, error } = await supabase
-    .from('job_applications')
-    .insert({
-      ...application,
-      status: 'pending'
-    })
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error applying for job:', error);
-    return null;
+  try {
+    const { data, error } = await supabase
+      .from('job_applications')
+      .insert({
+        ...application,
+        status: 'pending'
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error applying for job:', error);
+      throw error;
+    }
+    
+    if (!data) {
+      console.error('No data returned from application insert');
+      throw new Error('No data returned from application insert');
+    }
+    
+    console.log('Application submitted successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('Exception in applyForJobWithPitch:', error);
+    throw error;
   }
-  
-  return data;
 }
 
 // Function to get applications for a job
