@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -45,6 +46,7 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
       
       // Get client's contracts
       const clientContracts = await getClientContracts(user.id);
+      console.log("Loaded client contracts:", clientContracts);
       setContracts(clientContracts);
     } catch (error) {
       console.error('Error loading client dashboard data:', error);
@@ -111,8 +113,8 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
         });
       }
       
-      // Refresh data
-      loadData();
+      // Refresh data immediately to show updated status
+      await loadData();
       
       // Call parent refresh if provided
       if (onRefresh) {

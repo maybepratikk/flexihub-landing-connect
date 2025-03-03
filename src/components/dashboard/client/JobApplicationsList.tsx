@@ -6,6 +6,7 @@ import { CheckCircle, XCircle } from 'lucide-react';
 import { NavigateFunction } from 'react-router-dom';
 import { updateApplicationStatus, createContract, updateJobStatus } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface JobApplicationsListProps {
   jobId: string;
@@ -23,9 +24,16 @@ export function JobApplicationsList({
   onApplicationsUpdated
 }: JobApplicationsListProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleUpdateStatus = async (jobId: string, applicationId: string, status: 'accepted' | 'rejected', applicantId: string, rate: number) => {
     try {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      console.log(`Updating application ${applicationId} to ${status} for job ${jobId}`);
+      
       // First update the application status
       const updatedApplication = await updateApplicationStatus(applicationId, status);
       
@@ -35,14 +43,18 @@ export function JobApplicationsList({
 
       // If the application was accepted, create a contract and update job status
       if (status === 'accepted') {
+        console.log('Application accepted, creating contract');
+        
         const contractData = {
           job_id: jobId,
           freelancer_id: applicantId,
-          client_id: updatedApplication.jobs?.client_id || '',
+          client_id: user.id,
           rate: rate,
           status: 'active' as 'active' | 'completed' | 'terminated',
           start_date: new Date().toISOString()
         };
+        
+        console.log('Contract data:', contractData);
         
         const newContract = await createContract(contractData);
         
@@ -50,8 +62,11 @@ export function JobApplicationsList({
           throw new Error('Failed to create contract');
         }
         
+        console.log('Contract created successfully:', newContract);
+        
         // Update job status to in_progress
-        await updateJobStatus(jobId, 'in_progress');
+        const updatedJob = await updateJobStatus(jobId, 'in_progress');
+        console.log('Job status updated:', updatedJob);
         
         toast({
           title: "Application accepted",

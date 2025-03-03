@@ -497,6 +497,7 @@ export async function createContract(contractData: Omit<Contract, 'id' | 'create
 // Enhanced function to get contracts for a client
 export async function getClientContracts(clientId: string) {
   try {
+    console.log("Getting contracts for client:", clientId);
     const { data, error } = await supabase
       .from('contracts')
       .select(`
@@ -512,6 +513,7 @@ export async function getClientContracts(clientId: string) {
       return [];
     }
     
+    console.log("Fetched client contracts:", data);
     return data;
   } catch (error) {
     console.error('Exception in getClientContracts:', error);
@@ -645,6 +647,7 @@ export async function hasAppliedToJob(jobId: string, freelancerId: string) {
 // Enhanced function to update a job's status
 export async function updateJobStatus(jobId: string, status: 'open' | 'in_progress' | 'completed' | 'cancelled') {
   try {
+    console.log(`Updating job ${jobId} status to ${status}`);
     const { data, error } = await supabase
       .from('jobs')
       .update({ 
@@ -660,6 +663,7 @@ export async function updateJobStatus(jobId: string, status: 'open' | 'in_progre
       return null;
     }
     
+    console.log('Job status updated successfully:', data);
     return data;
   } catch (error) {
     console.error('Exception in updateJobStatus:', error);
