@@ -1,21 +1,23 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getFreelancerProfile, getFreelancerApplications, getFreelancerContracts } from '@/lib/supabase';
-import { Loader2, Search, FileCheck, Briefcase, Clock, CheckCircle, XCircle, Mail, Phone, X } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Mail } from 'lucide-react';
+import {
+  FreelancerDashboardHeader,
+  FreelancerStatusNotifications,
+  FreelancerStatsCards,
+  FreelancerProfileCard,
+  FreelancerApplicationsTab,
+  FreelancerContractsTab,
+  FreelancerLoadingState,
+  FreelancerEmptyState
+} from '@/components/dashboard/freelancer';
 
 export function FreelancerDashboard() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
@@ -79,25 +81,11 @@ export function FreelancerDashboard() {
   };
   
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <FreelancerLoadingState />;
   }
   
   if (!profile) {
-    return (
-      <div className="space-y-4 text-center">
-        <h2 className="text-xl font-semibold">Profile Not Found</h2>
-        <p className="text-muted-foreground">
-          Please complete your onboarding to access the dashboard.
-        </p>
-        <Button onClick={() => navigate('/onboarding')}>
-          Complete Onboarding
-        </Button>
-      </div>
-    );
+    return <FreelancerEmptyState />;
   }
   
   // Count applications by status
@@ -119,133 +107,22 @@ export function FreelancerDashboard() {
   
   return (
     <div className="space-y-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Freelancer Dashboard</h1>
-          <p className="text-muted-foreground">
-            Find jobs and manage your applications
-          </p>
-        </div>
-        <Button onClick={() => navigate('/jobs')}>
-          <Search className="mr-2 h-4 w-4" /> Find Jobs
-        </Button>
-      </div>
+      <FreelancerDashboardHeader />
       
-      {/* Notifications for status changes with close button */}
-      {recentStatusChanges.length > 0 && (
-        <div className="space-y-3">
-          {recentStatusChanges.map(app => (
-            <Alert key={app.id} variant={app.status === 'accepted' ? 'default' : 'destructive'} className="relative pr-8">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="absolute right-1 top-1 h-6 w-6 rounded-full p-0"
-                onClick={() => dismissNotification(app.id)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-              {app.status === 'accepted' ? (
-                <CheckCircle className="h-4 w-4" />
-              ) : (
-                <XCircle className="h-4 w-4" />
-              )}
-              <AlertTitle>
-                {app.status === 'accepted' 
-                  ? 'Application Accepted!' 
-                  : 'Application Rejected'}
-              </AlertTitle>
-              <AlertDescription>
-                {app.status === 'accepted' 
-                  ? `Your application for "${app.jobs?.title || 'this job'}" has been accepted! A contract has been created.` 
-                  : `Your application for "${app.jobs?.title || 'this job'}" was not selected.`}
-                <Button 
-                  variant="link" 
-                  className="p-0 h-auto"
-                  onClick={() => app.status === 'accepted' 
-                    ? navigate('/contracts') 
-                    : navigate(`/jobs/${app.job_id}`)}
-                >
-                  {app.status === 'accepted' ? 'View Contract' : 'Find Similar Jobs'}
-                </Button>
-              </AlertDescription>
-            </Alert>
-          ))}
-        </div>
-      )}
+      <FreelancerStatusNotifications 
+        recentStatusChanges={recentStatusChanges} 
+        onDismiss={dismissNotification} 
+      />
       
-      {/* Stats cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium">Pending Applications</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-yellow-500" />
-              <span className="text-2xl font-bold">{pendingApplications}</span>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium">Accepted Applications</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <span className="text-2xl font-bold">{acceptedApplications}</span>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium">Rejected Applications</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <XCircle className="h-5 w-5 text-red-500" />
-              <span className="text-2xl font-bold">{rejectedApplications}</span>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium">Active Contracts</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <Briefcase className="h-5 w-5 text-blue-500" />
-              <span className="text-2xl font-bold">{activeContracts}</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <FreelancerStatsCards 
+        pendingApplications={pendingApplications}
+        acceptedApplications={acceptedApplications}
+        rejectedApplications={rejectedApplications}
+        activeContracts={activeContracts}
+      />
       
-      {/* Profile overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile Overview</CardTitle>
-          <CardDescription>
-            Your professional profile information
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p><strong>Hourly Rate:</strong> ${profile?.hourly_rate}/hr</p>
-          <p><strong>Experience:</strong> {profile?.years_experience} years</p>
-          <p><strong>Skills:</strong> {profile?.skills?.join(', ')}</p>
-          <p><strong>Availability:</strong> {profile?.availability}</p>
-        </CardContent>
-        <CardFooter>
-          <Button variant="outline" asChild>
-            <Link to="/profile">Update Profile</Link>
-          </Button>
-        </CardFooter>
-      </Card>
+      <FreelancerProfileCard profile={profile} />
       
-      {/* Applications and Contracts tabs */}
       <Tabs defaultValue="applications">
         <TabsList className="mb-4">
           <TabsTrigger value="applications">My Applications</TabsTrigger>
@@ -253,147 +130,14 @@ export function FreelancerDashboard() {
         </TabsList>
         
         <TabsContent value="applications" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Applications</CardTitle>
-              <CardDescription>
-                Jobs you've applied for
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!applications || applications.length === 0 ? (
-                <div className="text-center py-6">
-                  <FileCheck className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-muted-foreground">You haven't applied to any jobs yet</p>
-                  <Button variant="outline" className="mt-4" onClick={() => navigate('/jobs')}>
-                    Find Jobs to Apply
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {applications.map((application) => (
-                    <div key={application.id} className="p-4 border rounded-lg">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold text-lg">
-                            <Link to={`/jobs/${application.job_id}`} className="hover:underline">
-                              {application.jobs?.title || 'Unnamed Job'}
-                            </Link>
-                          </h3>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            Applied {application.created_at ? formatDistanceToNow(new Date(application.created_at), { addSuffix: true }) : ''}
-                          </p>
-                          <p className="text-sm">
-                            <strong>Proposed Rate:</strong> ${application.proposed_rate}/{application.jobs?.budget_type === 'hourly' ? 'hr' : 'fixed'}
-                          </p>
-                          <div className="mt-2">
-                            <Badge 
-                              variant={
-                                application.status === 'pending' ? 'secondary' : 
-                                application.status === 'accepted' ? 'default' : 'destructive'
-                              }
-                            >
-                              {application.status === 'pending' ? 'Pending' : 
-                               application.status === 'accepted' ? 'Accepted' : 'Rejected'}
-                            </Badge>
-                          </div>
-                        </div>
-                        
-                        {application.status === 'accepted' && (
-                          <Button 
-                            size="sm" 
-                            onClick={() => {
-                              // Find the corresponding contract
-                              const contract = contracts.find(c => c.job_id === application.job_id);
-                              if (contract) {
-                                navigate(`/contracts/${contract.id}`);
-                              } else {
-                                navigate(`/jobs/${application.job_id}`);
-                              }
-                            }}
-                          >
-                            View Contract
-                          </Button>
-                        )}
-                      </div>
-                      
-                      {/* Show client contact info for accepted applications */}
-                      {application.status === 'accepted' && (
-                        <div className="mt-4 pt-4 border-t">
-                          <h4 className="text-sm font-semibold mb-2">Client Contact Information</h4>
-                          <div className="flex flex-col space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm">Use the contract page to message your client</span>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              Your application has been accepted! A contract has been created for this job.
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <FreelancerApplicationsTab 
+            applications={applications} 
+            contracts={contracts} 
+          />
         </TabsContent>
         
         <TabsContent value="contracts" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Contracts</CardTitle>
-              <CardDescription>
-                Active and past contracts with clients
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!contracts || contracts.length === 0 ? (
-                <div className="text-center py-6">
-                  <p className="text-muted-foreground">No contracts found</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {contracts.map((contract) => (
-                    <div key={contract.id} className="p-4 border rounded-lg">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold text-lg">
-                            {contract.jobs?.title || 'Unnamed Job'}
-                          </h3>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            Started {contract.start_date ? formatDistanceToNow(new Date(contract.start_date), { addSuffix: true }) : ''}
-                          </p>
-                          <p className="text-sm">
-                            <strong>Client:</strong> {contract.profiles?.full_name || 'Unknown Client'}
-                          </p>
-                          <p className="text-sm">
-                            <strong>Rate:</strong> ${contract.rate}/{contract.jobs?.budget_type === 'hourly' ? 'hr' : 'fixed'}
-                          </p>
-                          <div className="mt-2">
-                            <Badge 
-                              variant={
-                                contract.status === 'active' ? 'secondary' : 
-                                contract.status === 'completed' ? 'outline' : 'destructive'
-                              }
-                            >
-                              {contract.status}
-                            </Badge>
-                          </div>
-                        </div>
-                        <Button size="sm" variant="outline" asChild>
-                          <Link to={`/contracts/${contract.id}`}>
-                            View Details
-                          </Link>
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <FreelancerContractsTab contracts={contracts} />
         </TabsContent>
       </Tabs>
     </div>
