@@ -878,3 +878,94 @@ export const fixSpecificJob = async (jobTitle: string) => {
     return null;
   }
 }
+
+// Function to get all freelancers with optional filters
+export async function getFreelancers(filters?: {
+  skills?: string[];
+  experience?: 'entry' | 'intermediate' | 'expert';
+  hourlyRate?: { min?: number; max?: number };
+  availability?: string;
+  search?: string;
+}) {
+  try {
+    console.log("Getting freelancers with filters:", filters);
+    
+    let query = supabase
+      .from('profiles')
+      .select(`
+        *,
+        freelancer_profiles(*)
+      `)
+      .eq('user_type', 'freelancer');
+    
+    if (filters) {
+      if (filters.search) {
+        query = query.or(`full_name.ilike.%${filters.search}%,freelancer_profiles.bio.ilike.%${filters.search}%`);
+      }
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching freelancers:', error);
+      return [];
+    }
+    
+    // Further filter the results client-side if needed
+    let filteredData = data;
+    
+    if (filters) {
+      // Filter by skills if provided
+      if (filters.skills && filters.skills.length > 0) {
+        filteredData = filteredData.filter(freelancer => {
+          const freelancerSkills = freelancer.freelancer_profiles?.skills || [];
+          return filters.skills!.some(skill => 
+            freelancerSkills.includes(skill)
+          );
+        });
+      }
+      
+      // Filter by experience level if provided
+      if (filters.experience) {
+        filteredData = filteredData.filter(freelancer => {
+          const yearsExperience = freelancer.freelancer_profiles?.years_experience || 0;
+          
+          switch (filters.experience) {
+            case 'entry':
+              return yearsExperience < 3;
+            case 'intermediate':
+              return yearsExperience >= 3 && yearsExperience < 6;
+            case 'expert':
+              return yearsExperience >= 6;
+            default:
+              return true;
+          }
+        });
+      }
+      
+      // Filter by hourly rate range if provided
+      if (filters.hourlyRate) {
+        filteredData = filteredData.filter(freelancer => {
+          const rate = freelancer.freelancer_profiles?.hourly_rate || 0;
+          const min = filters.hourlyRate?.min || 0;
+          const max = filters.hourlyRate?.max || Infinity;
+          
+          return rate >= min && rate <= max;
+        });
+      }
+      
+      // Filter by availability if provided
+      if (filters.availability) {
+        filteredData = filteredData.filter(freelancer => {
+          return freelancer.freelancer_profiles?.availability === filters.availability;
+        });
+      }
+    }
+    
+    console.log(`Retrieved ${filteredData.length} freelancers`);
+    return filteredData;
+  } catch (error) {
+    console.error('Exception in getFreelancers:', error);
+    return [];
+  }
+}
