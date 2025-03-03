@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,16 +28,23 @@ export function FreelancerDashboard() {
       
       setLoading(true);
       try {
+        console.log("FreelancerDashboard - Loading data for user:", user.id);
+        
         // Get freelancer profile
         const freelancerProfile = await getFreelancerProfile(user.id);
         setProfile(freelancerProfile);
         
-        // Get freelancer's applications
+        // Get freelancer's applications with timestamp to force fresh data
+        const timestamp = new Date().toISOString();
+        console.log(`FreelancerDashboard - Fetching applications with timestamp: ${timestamp}`);
         const freelancerApplications = await getFreelancerApplications(user.id);
+        console.log("FreelancerDashboard - Applications loaded:", freelancerApplications);
         setApplications(freelancerApplications);
         
-        // Get freelancer's contracts
+        // Get freelancer's contracts with timestamp to force fresh data
+        console.log(`FreelancerDashboard - Fetching contracts with timestamp: ${timestamp}`);
         const freelancerContracts = await getFreelancerContracts(user.id);
+        console.log("FreelancerDashboard - Contracts loaded:", freelancerContracts);
         setContracts(freelancerContracts);
       } catch (error) {
         console.error('Error loading freelancer dashboard data:', error);
@@ -51,6 +59,14 @@ export function FreelancerDashboard() {
     };
     
     loadData();
+    
+    // Set up periodic refresh to ensure data is current
+    const intervalId = setInterval(() => {
+      console.log("FreelancerDashboard - Performing periodic refresh");
+      loadData();
+    }, 10000); // Refresh every 10 seconds
+    
+    return () => clearInterval(intervalId);
   }, [user, toast]);
   
   if (loading) {

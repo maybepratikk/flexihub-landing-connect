@@ -59,6 +59,14 @@ export function JobSidebar({ jobId, onClose }: JobSidebarProps) {
     };
 
     fetchJob();
+    
+    // Set up periodic refresh to ensure data is current
+    const intervalId = setInterval(() => {
+      console.log("Refreshing job and application status");
+      fetchJob();
+    }, 10000); // Refresh every 10 seconds
+    
+    return () => clearInterval(intervalId);
   }, [jobId, user]);
 
   const onSubmitApplication = async (data: ApplicationFormData) => {

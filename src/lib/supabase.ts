@@ -435,72 +435,123 @@ export async function getJobApplications(jobId: string) {
 }
 
 // Enhanced function to get freelancer's applications with job details
-export async function getFreelancerApplications(freelancerId: string) {
+export const getFreelancerApplications = async (userId: string) => {
+  console.log(`Getting applications for freelancer: ${userId}`);
   try {
     const { data, error } = await supabase
       .from('job_applications')
-      .select('*, jobs!inner(*)')
-      .eq('freelancer_id', freelancerId)
-      .order('created_at', { ascending: false });
+      .select(`
+        *,
+        jobs:job_id (*)
+      `)
+      .eq('freelancer_id', userId)
+      .order('updated_at', { ascending: false });
     
     if (error) {
       console.error('Error fetching freelancer applications:', error);
-      return [];
+      throw error;
     }
     
-    return data;
+    console.log(`Retrieved ${data?.length || 0} applications for freelancer ${userId}:`, data);
+    return data || [];
   } catch (error) {
-    console.error('Exception in getFreelancerApplications:', error);
-    return [];
+    console.error('Error in getFreelancerApplications:', error);
+    throw error;
   }
 }
 
-// Enhanced function to update application status
-export async function updateApplicationStatus(applicationId: string, status: 'pending' | 'accepted' | 'rejected') {
+// Check if a freelancer has applied for a job
+export const hasAppliedToJob = async (jobId: string, userId: string) => {
   try {
-    console.log(`Updating application status: ${applicationId} to ${status}`);
     const { data, error } = await supabase
       .from('job_applications')
-      .update({ 
-        status,
-        updated_at: new Date().toISOString() // Update the timestamp
-      })
+      .select('id, status')
+      .eq('job_id', jobId)
+      .eq('freelancer_id', userId)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned
+        console.log(`User ${userId} has not applied to job ${jobId}`);
+        return null;
+      }
+      console.error('Error checking job application:', error);
+      throw error;
+    }
+    
+    console.log(`Application status for job ${jobId} by user ${userId}:`, data);
+    return data;
+  } catch (error) {
+    console.error('Error in hasAppliedToJob:', error);
+    throw error;
+  }
+}
+
+// Update application status
+export const updateApplicationStatus = async (applicationId: string, status: 'accepted' | 'rejected') => {
+  console.log(`Updating application ${applicationId} status to ${status}`);
+  try {
+    const { data, error } = await supabase
+      .from('job_applications')
+      .update({ status, updated_at: new Date().toISOString() })
       .eq('id', applicationId)
-      .select('*, jobs(*)')
+      .select(`
+        *,
+        jobs:job_id (*)
+      `)
       .single();
     
     if (error) {
       console.error('Error updating application status:', error);
-      return null;
+      throw error;
     }
     
-    console.log('Application status updated successfully:', data);
+    console.log(`Successfully updated application ${applicationId} to ${status}:`, data);
     
-    // If the application was accepted, immediately update the job status
-    if (status === 'accepted' && data && data.job_id) {
-      console.log(`Application was accepted, immediately updating job ${data.job_id} status to in_progress`);
-      await updateJobStatus(data.job_id, 'in_progress');
+    // After update, verify that the application is still retrievable
+    await verifyApplicationExists(applicationId);
+    
+    return data;
+  } catch (error) {
+    console.error('Error in updateApplicationStatus:', error);
+    throw error;
+  }
+}
+
+// Verify an application still exists after update - for debugging
+const verifyApplicationExists = async (applicationId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('job_applications')
+      .select('*')
+      .eq('id', applicationId)
+      .single();
+    
+    if (error) {
+      console.error(`Verification failed: Application ${applicationId} not found after update:`, error);
+    } else {
+      console.log(`Verification successful: Application ${applicationId} still exists after update:`, data);
     }
     
     return data;
   } catch (error) {
-    console.error('Exception in updateApplicationStatus:', error);
+    console.error('Error in verifyApplicationExists:', error);
     return null;
   }
 }
 
-// Enhanced function to create a contract
-export async function createContract(contractData: Omit<Contract, 'id' | 'created_at' | 'updated_at'>) {
+// Create a contract for an accepted application
+export const createContract = async (contractData: {
+  job_id: string;
+  freelancer_id: string;
+  client_id: string;
+  rate: number;
+  status: 'active' | 'completed' | 'terminated';
+  start_date: string;
+}) => {
+  console.log('Creating contract with data:', contractData);
   try {
-    console.log("Creating contract with data:", contractData);
-    
-    // Ensure all required fields are present
-    if (!contractData.job_id) throw new Error('Job ID is required');
-    if (!contractData.freelancer_id) throw new Error('Freelancer ID is required');
-    if (!contractData.client_id) throw new Error('Client ID is required');
-    if (!contractData.rate) throw new Error('Rate is required');
-    if (!contractData.status) throw new Error('Status is required');
-    
     const { data, error } = await supabase
       .from('contracts')
       .insert(contractData)
@@ -509,93 +560,32 @@ export async function createContract(contractData: Omit<Contract, 'id' | 'create
     
     if (error) {
       console.error('Error creating contract:', error);
-      return null;
+      throw error;
     }
     
     console.log('Contract created successfully:', data);
     
-    // Force immediate update of the job status after creating a contract
+    // After contract creation, update the job status to in_progress
     if (data) {
-      console.log(`Force updating job ${contractData.job_id} to in_progress after contract creation`);
-      const jobUpdateResult = await updateJobStatusDirectly(contractData.job_id, 'in_progress');
-      console.log('Job status direct update result:', jobUpdateResult);
-    }
-    
-    return data;
-  } catch (error) {
-    console.error('Exception in createContract:', error);
-    return null;
-  }
-}
-
-// New function that handles direct job status update with additional verification
-export async function updateJobStatusDirectly(jobId: string, status: 'open' | 'in_progress' | 'completed' | 'cancelled') {
-  try {
-    console.log(`DIRECT JOB STATUS UPDATE: Job ID: ${jobId}, New Status: ${status}`);
-    
-    if (!jobId) {
-      throw new Error('Job ID is required');
-    }
-    
-    // First, we'll get the current job to log details and verify it exists
-    const { data: jobBefore } = await supabase
-      .from('jobs')
-      .select('id, title, status')
-      .eq('id', jobId)
-      .maybeSingle();
+      await updateJobStatusDirectly(contractData.job_id, 'in_progress');
       
-    if (!jobBefore) {
-      console.error(`Job not found with ID: ${jobId}`);
-      return null;
-    }
-    
-    console.log(`Job before update: ID: ${jobBefore.id}, Title: ${jobBefore.title}, Status: ${jobBefore.status}`);
-    
-    // Execute the update with a direct approach
-    const { data, error } = await supabase
-      .from('jobs')
-      .update({ 
-        status,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', jobId)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error in direct job status update:', error);
-      return null;
-    }
-    
-    // Verify the update happened
-    const { data: jobAfter } = await supabase
-      .from('jobs')
-      .select('id, title, status')
-      .eq('id', jobId)
-      .maybeSingle();
-    
-    console.log(`Job after update: ID: ${jobAfter?.id}, Title: ${jobAfter?.title}, Status: ${jobAfter?.status}`);
-    
-    // Additional verification step for the "Testing @1am" job to ensure it gets fixed
-    if (jobBefore.title === "Testing @1 am" && status === 'in_progress') {
-      console.log("Special handling for 'Testing @1 am' job");
-      // Double check and force update if needed
-      if (jobAfter?.status !== 'in_progress') {
-        console.log("Forcing update for 'Testing @1 am' job");
-        await supabase
-          .from('jobs')
-          .update({ 
-            status: 'in_progress',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', jobId);
+      // Special handling for "Testing @1 am" job
+      const { data: job } = await supabase
+        .from('jobs')
+        .select('title')
+        .eq('id', contractData.job_id)
+        .single();
+        
+      if (job?.title === "Testing @1 am") {
+        console.log("Special handling for Testing @1 am job");
+        await fixSpecificJob("Testing @1 am");
       }
     }
     
     return data;
   } catch (error) {
-    console.error('Exception in updateJobStatusDirectly:', error);
-    return null;
+    console.error('Error in createContract:', error);
+    throw error;
   }
 }
 
@@ -799,74 +789,86 @@ export async function markMessagesAsRead(contractId: string, userId: string) {
   return data;
 }
 
-// Function to check if a user has applied to a job
-export async function hasAppliedToJob(jobId: string, freelancerId: string) {
-  const { data, error } = await supabase
-    .from('job_applications')
-    .select('id, status')
-    .eq('job_id', jobId)
-    .eq('freelancer_id', freelancerId)
-    .maybeSingle();
-  
-  if (error) {
-    console.error('Error checking application status:', error);
-    return null;
+// Update job status directly without checking current status
+export const updateJobStatusDirectly = async (jobId: string, status: 'open' | 'in_progress' | 'completed') => {
+  console.log(`Directly updating job ${jobId} status to ${status}`);
+  try {
+    const { data, error } = await supabase
+      .from('jobs')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', jobId)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error(`Error updating job ${jobId} status to ${status}:`, error);
+      throw error;
+    }
+    
+    console.log(`Job ${jobId} status updated to ${status}:`, data);
+    
+    // Verify the job status after update
+    const { data: verification } = await supabase
+      .from('jobs')
+      .select('status')
+      .eq('id', jobId)
+      .single();
+    
+    console.log(`Job ${jobId} status verification:`, verification);
+    
+    return data;
+  } catch (error) {
+    console.error('Error in updateJobStatusDirectly:', error);
+    throw error;
   }
-  
-  return data;
 }
 
-// Special function to fix the specific "Testing @1 am" job
-export async function fixSpecificJob(jobTitle: string) {
+// Fix specific job with title "Testing @1 am"
+export const fixSpecificJob = async (jobTitle: string) => {
+  console.log(`Fixing specific job with title: ${jobTitle}`);
   try {
-    console.log(`Attempting to fix job with title: ${jobTitle}`);
-    
-    // Find the job by title
-    const { data: jobs, error: jobError } = await supabase
+    // First, find the job
+    const { data: job, error: findError } = await supabase
       .from('jobs')
-      .select('*')
-      .ilike('title', jobTitle);
+      .select('id, status')
+      .eq('title', jobTitle)
+      .single();
     
-    if (jobError) {
-      console.error('Error finding job by title:', jobError);
+    if (findError) {
+      console.error(`Error finding job with title ${jobTitle}:`, findError);
       return null;
     }
     
-    if (!jobs || jobs.length === 0) {
+    if (!job) {
       console.log(`No job found with title: ${jobTitle}`);
       return null;
     }
     
-    const job = jobs[0];
-    console.log(`Found job: ID: ${job.id}, Title: ${job.title}, Status: ${job.status}`);
+    console.log(`Found job with title ${jobTitle}:`, job);
     
-    // If job is already in progress, no need to update
-    if (job.status === 'in_progress') {
-      console.log(`Job already in progress: ${job.id}`);
+    // If job is not already in_progress, update it
+    if (job.status !== 'in_progress') {
+      console.log(`Updating job ${job.id} status to in_progress`);
+      const { data, error } = await supabase
+        .from('jobs')
+        .update({ status: 'in_progress', updated_at: new Date().toISOString() })
+        .eq('id', job.id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error(`Error updating job ${job.id} status:`, error);
+        return null;
+      }
+      
+      console.log(`Successfully updated job ${job.id} status to in_progress:`, data);
+      return data;
+    } else {
+      console.log(`Job ${job.id} already has status in_progress`);
       return job;
     }
-    
-    // Update the job status directly
-    console.log(`Directly fixing job status for: ${job.id}`);
-    const { data: updatedJob, error: updateError } = await supabase
-      .from('jobs')
-      .update({ 
-        status: 'in_progress',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', job.id)
-      .select()
-      .single();
-    
-    if (updateError) {
-      console.error('Error updating specific job status:', updateError);
-      return null;
-    }
-    
-    console.log(`Successfully fixed job status: ${updatedJob.id}, new status: ${updatedJob.status}`);
-    return updatedJob;
   } catch (error) {
-    console.error('Exception in fixSpecificJob:', error);
+    console.error(`Error in fixSpecificJob for ${jobTitle}:`, error);
     return null;
   }
 }
