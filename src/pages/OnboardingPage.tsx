@@ -4,7 +4,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { FreelancerOnboarding } from '@/components/onboarding/FreelancerOnboarding';
 import { ClientOnboarding } from '@/components/onboarding/ClientOnboarding';
-import { getUserProfile } from '@/lib/supabase';
+import { getUserProfile, supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
 
 const OnboardingPage = () => {
