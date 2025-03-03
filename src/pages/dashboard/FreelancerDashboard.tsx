@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getFreelancerProfile, getFreelancerApplications, getFreelancerContracts } from '@/lib/supabase';
-import { Loader2, Search, FileCheck, Briefcase, Clock, CheckCircle, XCircle, Mail, Phone } from 'lucide-react';
+import { Loader2, Search, FileCheck, Briefcase, Clock, CheckCircle, XCircle, Mail, Phone, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -21,47 +21,48 @@ export function FreelancerDashboard() {
   const [profile, setProfile] = useState<any>(null);
   const [applications, setApplications] = useState<any[]>([]);
   const [contracts, setContracts] = useState<any[]>([]);
+  const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
+  
+  const loadData = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    
+    console.log("FreelancerDashboard - Starting to load data for user:", user.id);
+    setLoading(true);
+    try {
+      // Get freelancer profile
+      console.log("FreelancerDashboard - Fetching profile for user:", user.id);
+      const freelancerProfile = await getFreelancerProfile(user.id);
+      console.log("FreelancerDashboard - Profile loaded:", freelancerProfile);
+      setProfile(freelancerProfile);
+      
+      // Get freelancer's applications with job details
+      console.log("FreelancerDashboard - Fetching applications for user:", user.id);
+      const freelancerApplications = await getFreelancerApplications(user.id);
+      console.log("FreelancerDashboard - Applications loaded:", freelancerApplications);
+      setApplications(freelancerApplications);
+      
+      // Get freelancer's contracts
+      console.log("FreelancerDashboard - Fetching contracts for user:", user.id);
+      const freelancerContracts = await getFreelancerContracts(user.id);
+      console.log("FreelancerDashboard - Contracts loaded:", freelancerContracts);
+      setContracts(freelancerContracts);
+    } catch (error) {
+      console.error('Error loading freelancer dashboard data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load dashboard data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      console.log("FreelancerDashboard - Finished loading data");
+    }
+  }, [user, toast]);
   
   useEffect(() => {
-    const loadData = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-      
-      console.log("FreelancerDashboard - Starting to load data for user:", user.id);
-      setLoading(true);
-      try {
-        // Get freelancer profile
-        console.log("FreelancerDashboard - Fetching profile for user:", user.id);
-        const freelancerProfile = await getFreelancerProfile(user.id);
-        console.log("FreelancerDashboard - Profile loaded:", freelancerProfile);
-        setProfile(freelancerProfile);
-        
-        // Get freelancer's applications
-        console.log("FreelancerDashboard - Fetching applications for user:", user.id);
-        const freelancerApplications = await getFreelancerApplications(user.id);
-        console.log("FreelancerDashboard - Applications loaded:", freelancerApplications);
-        setApplications(freelancerApplications);
-        
-        // Get freelancer's contracts
-        console.log("FreelancerDashboard - Fetching contracts for user:", user.id);
-        const freelancerContracts = await getFreelancerContracts(user.id);
-        console.log("FreelancerDashboard - Contracts loaded:", freelancerContracts);
-        setContracts(freelancerContracts);
-      } catch (error) {
-        console.error('Error loading freelancer dashboard data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load dashboard data. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-        console.log("FreelancerDashboard - Finished loading data");
-      }
-    };
-    
     loadData();
     
     // Set up periodic refresh to ensure data is current
@@ -71,7 +72,11 @@ export function FreelancerDashboard() {
     }, 30000); // Refresh every 30 seconds
     
     return () => clearInterval(intervalId);
-  }, [user, toast]);
+  }, [loadData]);
+
+  const dismissNotification = (applicationId: string) => {
+    setDismissedNotifications(prev => [...prev, applicationId]);
+  };
   
   if (loading) {
     return (
@@ -108,7 +113,8 @@ export function FreelancerDashboard() {
   const recentStatusChanges = applications?.filter(app => {
     const updatedAt = app?.updated_at ? new Date(app.updated_at) : null;
     return (app?.status === 'accepted' || app?.status === 'rejected') && 
-           updatedAt && updatedAt > sevenDaysAgo;
+           updatedAt && updatedAt > sevenDaysAgo &&
+           !dismissedNotifications.includes(app.id);
   }) || [];
   
   return (
@@ -125,11 +131,19 @@ export function FreelancerDashboard() {
         </Button>
       </div>
       
-      {/* Notifications for status changes */}
+      {/* Notifications for status changes with close button */}
       {recentStatusChanges.length > 0 && (
         <div className="space-y-3">
           {recentStatusChanges.map(app => (
-            <Alert key={app.id} variant={app.status === 'accepted' ? 'default' : 'destructive'}>
+            <Alert key={app.id} variant={app.status === 'accepted' ? 'default' : 'destructive'} className="relative pr-8">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute right-1 top-1 h-6 w-6 rounded-full p-0"
+                onClick={() => dismissNotification(app.id)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
               {app.status === 'accepted' ? (
                 <CheckCircle className="h-4 w-4" />
               ) : (
@@ -142,8 +156,8 @@ export function FreelancerDashboard() {
               </AlertTitle>
               <AlertDescription>
                 {app.status === 'accepted' 
-                  ? `Your application for "${app.jobs?.title}" has been accepted! A contract has been created.` 
-                  : `Your application for "${app.jobs?.title}" was not selected.`}
+                  ? `Your application for "${app.jobs?.title || 'this job'}" has been accepted! A contract has been created.` 
+                  : `Your application for "${app.jobs?.title || 'this job'}" was not selected.`}
                 <Button 
                   variant="link" 
                   className="p-0 h-auto"

@@ -665,7 +665,7 @@ export async function getClientContracts(clientId: string) {
       .select(`
         *,
         jobs(*),
-        profiles!contracts_freelancer_id_fkey(id, full_name, avatar_url)
+        profiles!contracts_client_id_fkey(*)
       `)
       .eq('client_id', clientId)
       .order('created_at', { ascending: false });
@@ -689,7 +689,11 @@ export async function getFreelancerContracts(freelancerId: string) {
     console.log(`Getting contracts for freelancer: ${freelancerId}`);
     const { data, error } = await supabase
       .from('contracts')
-      .select('*, jobs(*), profiles(*)')
+      .select(`
+        *,
+        jobs(*),
+        profiles!contracts_client_id_fkey(*)
+      `)
       .eq('freelancer_id', freelancerId)
       .order('created_at', { ascending: false });
     
