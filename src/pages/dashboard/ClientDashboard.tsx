@@ -36,12 +36,15 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
     
     setLoading(true);
     try {
+      console.log("Loading client dashboard data for user:", user.id);
+      
       // Get client profile
       const clientProfile = await getClientProfile(user.id);
       setProfile(clientProfile);
       
       // Get client's jobs
       const clientJobs = await getClientJobs(user.id);
+      console.log("Loaded client jobs:", clientJobs);
       setJobs(clientJobs);
       
       // Get client's contracts
@@ -66,12 +69,16 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
 
   const handleUpdateApplicationStatus = async (jobId: string, applicationId: string, status: 'accepted' | 'rejected') => {
     try {
+      console.log(`ClientDashboard - Updating application ${applicationId} for job ${jobId} to status: ${status}`);
+      
       // Update the application status
       const updatedApplication = await updateApplicationStatus(applicationId, status);
       
       if (!updatedApplication) {
         throw new Error('Failed to update application status');
       }
+      
+      console.log("Application updated successfully:", updatedApplication);
       
       // If the application was accepted, create a contract and update job status
       if (status === 'accepted') {
@@ -82,6 +89,8 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
           throw new Error('Job not found');
         }
         
+        console.log("Creating contract for job:", jobToUpdate);
+        
         const contractData = {
           job_id: jobId,
           freelancer_id: updatedApplication.freelancer_id,
@@ -91,14 +100,24 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
           start_date: new Date().toISOString()
         };
         
+        console.log("Contract data:", contractData);
+        
         const newContract = await createContract(contractData);
         
         if (!newContract) {
           throw new Error('Failed to create contract');
         }
         
+        console.log("Contract created successfully:", newContract);
+        
         // Update job status to in_progress
-        await updateJobStatus(jobId, 'in_progress');
+        const updatedJob = await updateJobStatus(jobId, 'in_progress');
+        
+        if (!updatedJob) {
+          throw new Error('Failed to update job status');
+        }
+        
+        console.log("Job status updated successfully:", updatedJob);
         
         toast({
           title: "Application accepted",

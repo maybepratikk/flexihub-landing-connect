@@ -337,18 +337,25 @@ export async function getJobById(jobId: string) {
 
 // Function to get jobs created by a client
 export async function getClientJobs(clientId: string) {
-  const { data, error } = await supabase
-    .from('jobs')
-    .select('*')
-    .eq('client_id', clientId)
-    .order('created_at', { ascending: false });
-  
-  if (error) {
-    console.error('Error fetching client jobs:', error);
+  try {
+    console.log("Getting jobs for client:", clientId);
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching client jobs:', error);
+      return [];
+    }
+    
+    console.log("Fetched client jobs:", data);
+    return data;
+  } catch (error) {
+    console.error('Exception in getClientJobs:', error);
     return [];
   }
-  
-  return data;
 }
 
 // Enhanced function to apply for a job with a pitch and contact info
@@ -451,6 +458,7 @@ export async function getFreelancerApplications(freelancerId: string) {
 // Enhanced function to update application status
 export async function updateApplicationStatus(applicationId: string, status: 'pending' | 'accepted' | 'rejected') {
   try {
+    console.log(`Updating application status: ${applicationId} to ${status}`);
     const { data, error } = await supabase
       .from('job_applications')
       .update({ 
@@ -458,7 +466,7 @@ export async function updateApplicationStatus(applicationId: string, status: 'pe
         updated_at: new Date().toISOString() // Update the timestamp
       })
       .eq('id', applicationId)
-      .select()
+      .select('*, jobs(*)')
       .single();
     
     if (error) {
@@ -466,6 +474,7 @@ export async function updateApplicationStatus(applicationId: string, status: 'pe
       return null;
     }
     
+    console.log('Application status updated successfully:', data);
     return data;
   } catch (error) {
     console.error('Exception in updateApplicationStatus:', error);
@@ -476,6 +485,15 @@ export async function updateApplicationStatus(applicationId: string, status: 'pe
 // Enhanced function to create a contract
 export async function createContract(contractData: Omit<Contract, 'id' | 'created_at' | 'updated_at'>) {
   try {
+    console.log("Creating contract with data:", contractData);
+    
+    // Ensure all required fields are present
+    if (!contractData.job_id) throw new Error('Job ID is required');
+    if (!contractData.freelancer_id) throw new Error('Freelancer ID is required');
+    if (!contractData.client_id) throw new Error('Client ID is required');
+    if (!contractData.rate) throw new Error('Rate is required');
+    if (!contractData.status) throw new Error('Status is required');
+    
     const { data, error } = await supabase
       .from('contracts')
       .insert(contractData)
@@ -487,6 +505,7 @@ export async function createContract(contractData: Omit<Contract, 'id' | 'create
       return null;
     }
     
+    console.log('Contract created successfully:', data);
     return data;
   } catch (error) {
     console.error('Exception in createContract:', error);
@@ -498,6 +517,13 @@ export async function createContract(contractData: Omit<Contract, 'id' | 'create
 export async function getClientContracts(clientId: string) {
   try {
     console.log("Getting contracts for client:", clientId);
+    
+    // First check if the client exists
+    if (!clientId) {
+      console.error("Client ID is required");
+      return [];
+    }
+    
     const { data, error } = await supabase
       .from('contracts')
       .select(`
@@ -513,7 +539,7 @@ export async function getClientContracts(clientId: string) {
       return [];
     }
     
-    console.log("Fetched client contracts:", data);
+    console.log(`Fetched ${data.length} client contracts:`, data);
     return data;
   } catch (error) {
     console.error('Exception in getClientContracts:', error);
@@ -648,6 +674,11 @@ export async function hasAppliedToJob(jobId: string, freelancerId: string) {
 export async function updateJobStatus(jobId: string, status: 'open' | 'in_progress' | 'completed' | 'cancelled') {
   try {
     console.log(`Updating job ${jobId} status to ${status}`);
+    
+    if (!jobId) {
+      throw new Error('Job ID is required');
+    }
+    
     const { data, error } = await supabase
       .from('jobs')
       .update({ 

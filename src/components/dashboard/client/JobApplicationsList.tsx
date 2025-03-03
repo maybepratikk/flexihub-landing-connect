@@ -32,7 +32,7 @@ export function JobApplicationsList({
         throw new Error('User not authenticated');
       }
 
-      console.log(`Updating application ${applicationId} to ${status} for job ${jobId}`);
+      console.log(`JobApplicationsList - Updating application ${applicationId} to ${status} for job ${jobId}`);
       
       // First update the application status
       const updatedApplication = await updateApplicationStatus(applicationId, status);
@@ -40,6 +40,8 @@ export function JobApplicationsList({
       if (!updatedApplication) {
         throw new Error('Failed to update application status');
       }
+
+      console.log("Application updated successfully:", updatedApplication);
 
       // If the application was accepted, create a contract and update job status
       if (status === 'accepted') {
@@ -54,7 +56,7 @@ export function JobApplicationsList({
           start_date: new Date().toISOString()
         };
         
-        console.log('Contract data:', contractData);
+        console.log('Contract data for creation:', contractData);
         
         const newContract = await createContract(contractData);
         
@@ -66,7 +68,12 @@ export function JobApplicationsList({
         
         // Update job status to in_progress
         const updatedJob = await updateJobStatus(jobId, 'in_progress');
-        console.log('Job status updated:', updatedJob);
+        
+        if (!updatedJob) {
+          throw new Error('Failed to update job status');
+        }
+        
+        console.log('Job status updated successfully:', updatedJob);
         
         toast({
           title: "Application accepted",
