@@ -18,7 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, CheckCircle, XCircle, Phone, Mail } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Phone, Mail, Loader2 } from 'lucide-react';
 
 export default function ApplicationsPage() {
   const { jobId } = useParams<{ jobId: string }>();
@@ -35,11 +35,14 @@ export default function ApplicationsPage() {
     const fetchJobAndApplications = async () => {
       setLoading(true);
       try {
+        console.log("Fetching job details and applications for jobId:", jobId);
         const jobData = await getJobById(jobId);
+        console.log("Job data:", jobData);
         
         if (jobData && jobData.client_id === user.id) {
           setJob(jobData);
           const applicationsData = await getJobApplications(jobId);
+          console.log("Applications data:", applicationsData);
           setApplications(applicationsData);
         } else {
           // If user is not the job owner, redirect
@@ -69,6 +72,7 @@ export default function ApplicationsPage() {
     if (!job || !user) return;
 
     try {
+      console.log(`Updating application ${applicationId} status to ${status}`);
       const updatedApplication = await updateApplicationStatus(applicationId, status);
       
       if (updatedApplication) {
@@ -85,6 +89,7 @@ export default function ApplicationsPage() {
           
           if (application) {
             // Create a contract
+            console.log("Creating contract for accepted application:", application);
             const contract = await createContract({
               job_id: job.id,
               freelancer_id: application.freelancer_id,
@@ -96,6 +101,7 @@ export default function ApplicationsPage() {
 
             if (contract) {
               // Update job status to in_progress
+              console.log("Updating job status to in_progress");
               await updateJobStatus(job.id, 'in_progress');
               
               // Update local job status
@@ -132,7 +138,7 @@ export default function ApplicationsPage() {
   if (loading) {
     return (
       <div className="container mx-auto py-10 flex justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
@@ -148,8 +154,8 @@ export default function ApplicationsPage() {
 
   return (
     <div className="container mx-auto py-10">
-      <Button variant="outline" onClick={() => navigate('/jobs')} className="mb-6">
-        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Jobs
+      <Button variant="outline" onClick={() => navigate('/dashboard')} className="mb-6">
+        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
       </Button>
 
       <Card className="mb-8">
@@ -276,7 +282,7 @@ export default function ApplicationsPage() {
                         <div>
                           <h3 className="font-semibold mb-2">Skills</h3>
                           <div className="flex flex-wrap gap-1">
-                            {application.freelancer_profiles.skills.map((skill, i) => (
+                            {application.freelancer_profiles.skills.map((skill: string, i: number) => (
                               <Badge key={i} variant="outline" className="text-xs">{skill}</Badge>
                             ))}
                           </div>

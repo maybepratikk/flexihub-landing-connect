@@ -405,9 +405,14 @@ export async function applyForJobWithPitch(application: Omit<JobApplication, 'id
 // Enhanced function to get applications for a job with more detailed info
 export async function getJobApplications(jobId: string) {
   try {
+    console.log("Getting applications for job:", jobId);
     const { data, error } = await supabase
       .from('job_applications')
-      .select('*, profiles!inner(id, full_name, avatar_url), freelancer_profiles!inner(*)')
+      .select(`
+        *,
+        profiles(id, full_name, avatar_url),
+        freelancer_profiles(bio, skills, years_experience, portfolio_links)
+      `)
       .eq('job_id', jobId);
     
     if (error) {
@@ -415,6 +420,7 @@ export async function getJobApplications(jobId: string) {
       return [];
     }
     
+    console.log("Fetched applications:", data);
     return data;
   } catch (error) {
     console.error('Exception in getJobApplications:', error);

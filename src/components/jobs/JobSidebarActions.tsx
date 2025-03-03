@@ -57,7 +57,7 @@ export function JobSidebarActions({
       
       {/* Show view applications button for job owners */}
       {isJobOwner && (
-        <Button onClick={() => navigate(`/jobs/${job.id}/applications`)} className="w-full mt-2">
+        <Button onClick={() => navigate(`/dashboard?view=applications&jobId=${job.id}`)} className="w-full mt-2">
           View Applications
         </Button>
       )}

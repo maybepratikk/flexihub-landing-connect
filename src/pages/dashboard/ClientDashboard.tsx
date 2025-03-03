@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 export function ClientDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
@@ -24,6 +25,19 @@ export function ClientDashboard() {
   const [activeTab, setActiveTab] = useState('jobs');
   const [jobApplications, setJobApplications] = useState<Record<string, any[]>>({});
   const [loadingApplications, setLoadingApplications] = useState<Record<string, boolean>>({});
+  
+  // Parse query parameters to check if we should load applications for a specific job
+  const queryParams = new URLSearchParams(location.search);
+  const viewParam = queryParams.get('view');
+  const jobIdParam = queryParams.get('jobId');
+  
+  useEffect(() => {
+    // If URL has view=applications and jobId parameter, load applications for that job
+    if (viewParam === 'applications' && jobIdParam) {
+      setActiveTab('jobs');
+      loadJobApplications(jobIdParam);
+    }
+  }, [viewParam, jobIdParam]);
   
   useEffect(() => {
     const loadData = async () => {
@@ -37,6 +51,7 @@ export function ClientDashboard() {
         
         // Get client's jobs
         const clientJobs = await getClientJobs(user.id);
+        console.log("Loaded client jobs:", clientJobs);
         setJobs(clientJobs);
         
         // Get client's contracts
@@ -57,7 +72,9 @@ export function ClientDashboard() {
     
     setLoadingApplications(prev => ({ ...prev, [jobId]: true }));
     try {
+      console.log("Loading applications for job:", jobId);
       const applications = await getJobApplications(jobId);
+      console.log("Loaded applications:", applications);
       setJobApplications(prev => ({ ...prev, [jobId]: applications }));
     } catch (error) {
       console.error(`Error loading applications for job ${jobId}:`, error);
@@ -75,6 +92,7 @@ export function ClientDashboard() {
     if (!user) return;
 
     try {
+      console.log(`Updating application ${applicationId} to status: ${status}`);
       const updatedApplication = await updateApplicationStatus(applicationId, status);
       
       if (updatedApplication) {
@@ -92,6 +110,7 @@ export function ClientDashboard() {
           
           if (application) {
             // Create a contract
+            console.log("Creating contract for accepted application:", application);
             const contract = await createContract({
               job_id: jobId,
               freelancer_id: application.freelancer_id,
@@ -103,6 +122,7 @@ export function ClientDashboard() {
 
             if (contract) {
               // Update job status to in_progress
+              console.log("Updating job status to in_progress");
               await updateJobStatus(jobId, 'in_progress');
               
               // Update local job status
