@@ -29,15 +29,24 @@ export default function JobDetailPage() {
 
     const fetchJob = async () => {
       setLoading(true);
-      const fetchedJob = await getJobById(jobId);
-      setJob(fetchedJob);
-      
-      if (user && fetchedJob) {
-        const application = await hasAppliedToJob(jobId, user.id);
-        setHasApplied(application);
+      try {
+        const fetchedJob = await getJobById(jobId);
+        console.log("Detail page - Fetched job:", fetchedJob);
+        
+        if (fetchedJob) {
+          setJob(fetchedJob);
+          
+          if (user) {
+            const application = await hasAppliedToJob(jobId, user.id);
+            console.log("Detail page - Application status:", application);
+            setHasApplied(application);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching job:', error);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
 
     fetchJob();
@@ -92,9 +101,19 @@ export default function JobDetailPage() {
   }
 
   const userType = user && 'user_metadata' in user ? (user.user_metadata as any).user_type : undefined;
-  const isClient = userType === 'client';
+  const isFreelancer = userType === 'freelancer';
   const isJobOwner = job.client_id === user?.id;
-  const canApply = userType === 'freelancer' && !isJobOwner && !hasApplied;
+  // Only freelancers who don't own the job and haven't applied can apply
+  const canApply = isFreelancer && !isJobOwner && !hasApplied && job.status === 'open';
+  
+  console.log("Job detail page state:", { 
+    userType, 
+    isFreelancer, 
+    isJobOwner, 
+    canApply, 
+    hasApplied,
+    jobStatus: job.status
+  });
 
   return (
     <div className="container mx-auto py-10">

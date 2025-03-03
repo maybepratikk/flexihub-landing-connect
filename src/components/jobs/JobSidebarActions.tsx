@@ -24,23 +24,29 @@ export function JobSidebarActions({
 }: JobSidebarActionsProps) {
   const navigate = useNavigate();
   
+  console.log("JobSidebarActions props:", { isJobOwner, canApply, hasApplied, showApplicationForm, jobStatus: job.status });
+  
   return (
     <div className="p-4 border-t">
-      {canApply ? (
+      {canApply && job.status === 'open' && (
         <>
           {showApplicationForm ? (
-            <Button variant="outline" onClick={() => onShowApplicationForm()} className="w-full">
+            <Button variant="outline" onClick={onShowApplicationForm} className="w-full">
               Cancel Application
             </Button>
           ) : (
-            <Button onClick={() => onShowApplicationForm()} className="w-full">
+            <Button onClick={onShowApplicationForm} className="w-full">
               Apply for this Job
             </Button>
           )}
         </>
-      ) : hasApplied ? (
-        <ApplicationStatus status={hasApplied.status || 'pending'} compact />
-      ) : null}
+      )}
+      
+      {hasApplied && (
+        <div className="mb-4">
+          <ApplicationStatus status={hasApplied.status || 'pending'} compact />
+        </div>
+      )}
       
       {isJobOwner && (
         <Button onClick={() => navigate(`/jobs/${job.id}/applications`)} className="w-full mt-2">
