@@ -61,7 +61,9 @@ export default function JobDetailPage() {
         freelancer_id: user.id,
         cover_letter: data.cover_letter,
         pitch: data.pitch,
-        proposed_rate: data.proposed_rate
+        proposed_rate: data.proposed_rate,
+        contact_phone: data.phone,
+        contact_email: data.email
       });
 
       if (application) {
@@ -135,6 +137,7 @@ export default function JobDetailPage() {
           onSubmit={onSubmit}
           onCancel={() => setShowApplicationForm(false)}
           budgetType={job.budget_type as 'fixed' | 'hourly'}
+          userEmail={user?.email}
         />
       )}
     </div>

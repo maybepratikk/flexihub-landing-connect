@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 // Get environment variables for Supabase connection
@@ -63,7 +64,7 @@ export type Job = {
   };
 };
 
-// Updated JobApplication type to include profiles and freelancer_profiles
+// Updated JobApplication type to include profiles, freelancer_profiles, and contact info
 export type JobApplication = {
   id: string;
   job_id: string;
@@ -71,6 +72,8 @@ export type JobApplication = {
   cover_letter?: string;
   pitch?: string;
   proposed_rate?: number;
+  contact_phone?: string;
+  contact_email?: string;
   status: 'pending' | 'accepted' | 'rejected';
   created_at?: string;
   updated_at?: string;
@@ -341,7 +344,7 @@ export async function getClientJobs(clientId: string) {
   return data;
 }
 
-// Enhanced function to apply for a job with a pitch
+// Enhanced function to apply for a job with a pitch and contact info
 export async function applyForJobWithPitch(application: Omit<JobApplication, 'id' | 'status' | 'created_at' | 'updated_at'>) {
   console.log("Applying for job with data:", application);
   

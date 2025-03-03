@@ -18,7 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Phone, Mail } from 'lucide-react';
 
 export default function ApplicationsPage() {
   const { jobId } = useParams<{ jobId: string }>();
@@ -230,6 +230,31 @@ export default function ApplicationsPage() {
                   <h3 className="text-sm font-semibold mb-2">Pitch</h3>
                   <div className="text-sm whitespace-pre-line">{application.pitch}</div>
                 </div>
+                
+                {application.status === 'accepted' && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="text-sm font-semibold mb-2">Contact Information</h3>
+                      <div className="space-y-2">
+                        {application.contact_phone && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <span>{application.contact_phone}</span>
+                          </div>
+                        )}
+                        {application.contact_email && (
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <a href={`mailto:${application.contact_email}`} className="text-primary hover:underline">
+                              {application.contact_email}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
                 
                 {application.freelancer_profiles && (
                   <>

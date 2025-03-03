@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -178,7 +179,13 @@ export function ClientDashboard() {
                             </Badge>
                           </div>
                         </div>
-                        <Button size="sm" variant="outline">View Applications</Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => navigate(`/jobs/${job.id}/applications`)}
+                        >
+                          View Applications
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -230,7 +237,13 @@ export function ClientDashboard() {
                             </Badge>
                           </div>
                         </div>
-                        <Button size="sm" variant="outline">View Details</Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => navigate(`/contracts/${contract.id}`)}
+                        >
+                          View Details
+                        </Button>
                       </div>
                     </div>
                   ))}

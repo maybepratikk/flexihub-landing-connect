@@ -6,9 +6,10 @@ interface JobDetailApplicationProps {
   onSubmit: (data: ApplicationFormData) => Promise<void>;
   onCancel: () => void;
   budgetType: 'fixed' | 'hourly';
+  userEmail?: string;
 }
 
-export function JobDetailApplication({ onSubmit, onCancel, budgetType }: JobDetailApplicationProps) {
+export function JobDetailApplication({ onSubmit, onCancel, budgetType, userEmail }: JobDetailApplicationProps) {
   return (
     <Card>
       <CardHeader>
@@ -19,7 +20,8 @@ export function JobDetailApplication({ onSubmit, onCancel, budgetType }: JobDeta
         <JobApplyForm 
           onSubmit={onSubmit} 
           onCancel={onCancel} 
-          budgetType={budgetType} 
+          budgetType={budgetType}
+          defaultEmail={userEmail || ''}
         />
       </CardContent>
     </Card>

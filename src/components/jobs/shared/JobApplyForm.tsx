@@ -17,6 +17,12 @@ const applicationSchema = z.object({
   proposed_rate: z.coerce.number().min(5, {
     message: "Proposed rate must be at least $5.",
   }),
+  phone: z.string().min(5, {
+    message: "Phone number is required.",
+  }),
+  email: z.string().email({
+    message: "Please enter a valid email address.",
+  }),
 });
 
 export type ApplicationFormData = z.infer<typeof applicationSchema>;
@@ -25,15 +31,18 @@ interface JobApplyFormProps {
   onSubmit: (data: ApplicationFormData) => Promise<void>;
   onCancel: () => void;
   budgetType: 'fixed' | 'hourly';
+  defaultEmail?: string;
 }
 
-export function JobApplyForm({ onSubmit, onCancel, budgetType }: JobApplyFormProps) {
+export function JobApplyForm({ onSubmit, onCancel, budgetType, defaultEmail = '' }: JobApplyFormProps) {
   const form = useForm<ApplicationFormData>({
     resolver: zodResolver(applicationSchema),
     defaultValues: {
       cover_letter: "",
       pitch: "",
       proposed_rate: 0,
+      phone: "",
+      email: defaultEmail,
     },
   });
 
@@ -92,6 +101,42 @@ export function JobApplyForm({ onSubmit, onCancel, budgetType }: JobApplyFormPro
             </FormItem>
           )}
         />
+        
+        <div className="border-t pt-4 mt-4">
+          <h3 className="text-sm font-semibold mb-3">Contact Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter your phone number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="Enter your email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            This information will only be shared with the client if your application is accepted.
+          </p>
+        </div>
         
         <div className="flex justify-end space-x-2 pt-4">
           <Button variant="outline" type="button" onClick={onCancel}>

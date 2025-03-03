@@ -69,7 +69,9 @@ export function JobSidebar({ jobId, onClose }: JobSidebarProps) {
         freelancer_id: user.id,
         cover_letter: data.cover_letter,
         pitch: data.pitch,
-        proposed_rate: data.proposed_rate
+        proposed_rate: data.proposed_rate,
+        contact_phone: data.phone,
+        contact_email: data.email
       });
 
       if (application) {
@@ -153,6 +155,7 @@ export function JobSidebar({ jobId, onClose }: JobSidebarProps) {
         hasApplied={hasApplied}
         onSubmitApplication={onSubmitApplication}
         onCancelApplication={() => setShowApplicationForm(false)}
+        userEmail={user?.email}
       />
       
       <JobSidebarActions
