@@ -4,8 +4,16 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
+// Extended User type that includes user_type
+export interface ExtendedUser extends User {
+  user_metadata: {
+    full_name?: string;
+    user_type?: 'freelancer' | 'client';
+  };
+}
+
 interface AuthContextType {
-  user: User | null;
+  user: ExtendedUser | null;
   session: Session | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, userType: string) => Promise<void>;
@@ -14,10 +22,10 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<ExtendedUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -37,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       setSession(session);
-      setUser(session?.user ?? null);
+      setUser(session?.user as ExtendedUser ?? null);
       setLoading(false);
     };
 
@@ -47,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log('Auth state changed:', _event);
       setSession(session);
-      setUser(session?.user ?? null);
+      setUser(session?.user as ExtendedUser ?? null);
       setLoading(false);
     });
 
