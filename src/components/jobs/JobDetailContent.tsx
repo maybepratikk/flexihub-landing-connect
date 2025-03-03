@@ -24,32 +24,41 @@ export function JobDetailContent({
   setShowApplicationForm
 }: JobDetailContentProps) {
   const navigate = useNavigate();
+  
+  console.log("JobDetailContent props:", { 
+    canApply, 
+    isJobOwner, 
+    hasApplied, 
+    jobStatus: job.status 
+  });
 
   return (
     <Card className="mb-8">
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 pt-6">
         <JobDetails job={job} />
       </CardContent>
-      <CardFooter>
-        {canApply && (
-          <>
-            {showApplicationForm ? (
-              <Button variant="outline" onClick={() => setShowApplicationForm(false)}>
-                Cancel Application
-              </Button>
-            ) : (
-              <Button onClick={() => setShowApplicationForm(true)}>
-                Apply for this Job
-              </Button>
-            )}
-          </>
-        )}
-        
-        {hasApplied && (
-          <div className="text-muted-foreground">
-            You have already applied to this job. Status: {hasApplied.status}
-          </div>
-        )}
+      <CardFooter className="flex flex-wrap gap-3 justify-between items-center">
+        <div>
+          {canApply && job.status === 'open' && (
+            <>
+              {showApplicationForm ? (
+                <Button variant="outline" onClick={() => setShowApplicationForm(false)}>
+                  Cancel Application
+                </Button>
+              ) : (
+                <Button onClick={() => setShowApplicationForm(true)}>
+                  Apply for this Job
+                </Button>
+              )}
+            </>
+          )}
+          
+          {hasApplied && (
+            <div className="mt-2">
+              <ApplicationStatus status={hasApplied.status || 'pending'} compact />
+            </div>
+          )}
+        </div>
         
         {isJobOwner && (
           <Button onClick={() => navigate(`/jobs/${job.id}/applications`)}>

@@ -121,10 +121,16 @@ export function JobSidebar({ jobId, onClose }: JobSidebarProps) {
     );
   }
 
+  // Determine if user is a freelancer based on user_metadata
   const userType = user && 'user_metadata' in user ? (user.user_metadata as any).user_type : undefined;
   const isFreelancer = userType === 'freelancer';
   const isJobOwner = job.client_id === user?.id;
-  // Only freelancers who don't own the job and haven't applied can apply
+  
+  // A user can apply if they are:
+  // 1. A freelancer
+  // 2. Not the job owner
+  // 3. Haven't already applied
+  // 4. The job is still open
   const canApply = isFreelancer && !isJobOwner && !hasApplied && job.status === 'open';
   
   console.log("Job sidebar state:", { 
@@ -136,6 +142,7 @@ export function JobSidebar({ jobId, onClose }: JobSidebarProps) {
     jobStatus: job.status
   });
 
+  // Update job status if application has been accepted
   if (hasApplied?.status === 'accepted' && job.status === 'open') {
     // Only update if job is still open and application is accepted
     updateJobStatus(job.id, 'in_progress');

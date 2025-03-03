@@ -29,8 +29,6 @@ export default function JobsPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user) return;
-
     // Check for URL search params
     const categoryParam = searchParams.get('category') || '';
     const experienceParam = searchParams.get('experience') || '';
@@ -53,6 +51,7 @@ export default function JobsPage() {
       if (searchParam) filterParams.search = searchParam;
 
       const fetchedJobs = await getJobs(Object.keys(filterParams).length > 0 ? filterParams : undefined);
+      console.log("Fetched jobs:", fetchedJobs);
       setJobs(fetchedJobs);
       setFilteredJobs(fetchedJobs);
       setLoading(false);
@@ -136,14 +135,15 @@ export default function JobsPage() {
   ];
 
   return (
-    <div className="container mx-auto py-10">
+    <div className="container mx-auto py-10 px-4 sm:px-6">
       <h1 className="text-3xl font-bold mb-2">Find Jobs</h1>
       <p className="text-muted-foreground mb-8">
         Browse through available jobs and find your next opportunity
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="md:col-span-1">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Filters - Show on larger screens normally, can be toggled on mobile */}
+        <div className="lg:col-span-1">
           <Card>
             <CardHeader>
               <CardTitle>Filters</CardTitle>
@@ -198,7 +198,8 @@ export default function JobsPage() {
           </Card>
         </div>
 
-        <div className={`md:col-span-${selectedJobId ? '2' : '3'}`}>
+        {/* Job Listings */}
+        <div className={`lg:col-span-${selectedJobId ? '2' : '3'}`}>
           <div className="mb-6 flex gap-2">
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -237,8 +238,9 @@ export default function JobsPage() {
           )}
         </div>
 
+        {/* Job Sidebar - Only visible when a job is selected */}
         {selectedJobId && (
-          <div className="md:col-span-1 relative">
+          <div className="lg:col-span-1 relative">
             <div className="sticky top-4 border rounded-lg shadow-sm bg-background h-[calc(100vh-120px)] overflow-hidden">
               <JobSidebar jobId={selectedJobId} onClose={handleCloseSidebar} />
             </div>

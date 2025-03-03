@@ -18,7 +18,10 @@ export function JobCard({ job, onClick }: JobCardProps) {
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => onClick(job)}>
+    <Card 
+      className="hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col" 
+      onClick={() => onClick(job)}
+    >
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-xl">{job.title}</CardTitle>
@@ -31,7 +34,7 @@ export function JobCard({ job, onClick }: JobCardProps) {
           {job.created_at && formatDistanceToNow(new Date(job.created_at), { addSuffix: true })}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow">
         <p className="text-muted-foreground mb-4">
           {truncateDescription(job.description)}
         </p>
@@ -47,7 +50,7 @@ export function JobCard({ job, onClick }: JobCardProps) {
             </Badge>
           )}
         </div>
-        <div className="flex justify-between text-sm">
+        <div className="flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
           <span>
             Budget: ${job.budget_min} - ${job.budget_max}
             {job.budget_type === 'hourly' && '/hr'}
