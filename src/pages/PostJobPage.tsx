@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,7 +17,7 @@ import { Loader2, Info } from 'lucide-react';
 // Job categories
 const jobCategories = [
   "Web Development",
-  "Mobile Development",
+  "Mobile Development", 
   "UI/UX Design",
   "Graphic Design",
   "Content Writing",
@@ -296,7 +295,7 @@ const PostJobPage = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="short">Short Term (< 1 month)</SelectItem>
+                              <SelectItem value="short">Short Term (&lt; 1 month)</SelectItem>
                               <SelectItem value="medium">Medium Term (1-3 months)</SelectItem>
                               <SelectItem value="long">Long Term (3+ months)</SelectItem>
                             </SelectContent>
