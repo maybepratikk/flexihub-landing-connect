@@ -790,7 +790,7 @@ export async function markMessagesAsRead(contractId: string, userId: string) {
 }
 
 // Update job status directly without checking current status
-export const updateJobStatusDirectly = async (jobId: string, status: 'open' | 'in_progress' | 'completed') => {
+export const updateJobStatusDirectly = async (jobId: string, status: 'open' | 'in_progress' | 'completed' | 'cancelled') => {
   console.log(`Directly updating job ${jobId} status to ${status}`);
   try {
     const { data, error } = await supabase
