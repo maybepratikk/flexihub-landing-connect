@@ -37,7 +37,7 @@ export function JobDetailContent({
       <CardContent className="space-y-6 pt-6">
         <JobDetails job={job} />
       </CardContent>
-      <CardFooter className="flex flex-wrap gap-3 justify-between items-center">
+      <CardFooter className="flex flex-wrap gap-3 justify-between items-center border-t pt-4 pb-4">
         <div>
           {canApply && job.status === 'open' && (
             <>

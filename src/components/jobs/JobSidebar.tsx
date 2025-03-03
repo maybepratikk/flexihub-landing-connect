@@ -122,7 +122,7 @@ export function JobSidebar({ jobId, onClose }: JobSidebarProps) {
   }
 
   // Determine if user is a freelancer based on user_metadata
-  const userType = user && 'user_metadata' in user ? (user.user_metadata as any).user_type : undefined;
+  const userType = user && user.user_metadata ? user.user_metadata.user_type : undefined;
   const isFreelancer = userType === 'freelancer';
   const isJobOwner = job.client_id === user?.id;
   
@@ -131,7 +131,7 @@ export function JobSidebar({ jobId, onClose }: JobSidebarProps) {
   // 2. Not the job owner
   // 3. Haven't already applied
   // 4. The job is still open
-  const canApply = isFreelancer && !isJobOwner && !hasApplied && job.status === 'open';
+  const canApply = Boolean(isFreelancer && !isJobOwner && !hasApplied && job.status === 'open');
   
   console.log("Job sidebar state:", { 
     userType,
@@ -139,14 +139,9 @@ export function JobSidebar({ jobId, onClose }: JobSidebarProps) {
     isJobOwner, 
     canApply, 
     hasApplied, 
-    jobStatus: job.status
+    jobStatus: job.status,
+    userObject: user
   });
-
-  // Update job status if application has been accepted
-  if (hasApplied?.status === 'accepted' && job.status === 'open') {
-    // Only update if job is still open and application is accepted
-    updateJobStatus(job.id, 'in_progress');
-  }
 
   return (
     <div className="h-full flex flex-col overflow-hidden">

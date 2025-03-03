@@ -6,19 +6,20 @@ interface ApplicationStatusProps {
 
 export function ApplicationStatus({ status, compact = false }: ApplicationStatusProps) {
   let statusColor = '';
+  const normalizedStatus = status?.toLowerCase() || 'pending';
   
-  switch(status.toLowerCase()) {
+  switch(normalizedStatus) {
     case 'pending':
-      statusColor = 'bg-amber-50 text-amber-700';
+      statusColor = 'bg-amber-50 text-amber-700 border border-amber-200';
       break;
     case 'accepted':
-      statusColor = 'bg-green-50 text-green-700';
+      statusColor = 'bg-green-50 text-green-700 border border-green-200';
       break;
     case 'rejected':
-      statusColor = 'bg-red-50 text-red-700';
+      statusColor = 'bg-red-50 text-red-700 border border-red-200';
       break;
     default:
-      statusColor = 'bg-muted';
+      statusColor = 'bg-muted border border-muted-foreground/20';
   }
   
   return (
@@ -26,8 +27,8 @@ export function ApplicationStatus({ status, compact = false }: ApplicationStatus
       <p className="font-medium capitalize">Application Status: {status}</p>
       {!compact && (
         <p className="text-sm text-muted-foreground mt-1">
-          {status.toLowerCase() === 'pending' ? 'Waiting for client review' :
-           status.toLowerCase() === 'accepted' ? 'Congratulations! Your application was accepted.' :
+          {normalizedStatus === 'pending' ? 'Waiting for client review' :
+           normalizedStatus === 'accepted' ? 'Congratulations! Your application was accepted.' :
            'Application was not selected for this position.'}
         </p>
       )}

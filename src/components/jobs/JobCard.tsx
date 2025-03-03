@@ -3,7 +3,7 @@ import { Job } from '@/lib/supabase';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, User } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface JobCardProps {
@@ -23,19 +23,21 @@ export function JobCard({ job, onClick }: JobCardProps) {
       onClick={() => onClick(job)}
     >
       <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <CardTitle className="text-xl">{job.title}</CardTitle>
-          <Badge variant={job.budget_type === 'fixed' ? 'outline' : 'default'}>
+        <div className="flex flex-wrap justify-between items-start gap-2">
+          <CardTitle className="text-xl break-words">{job.title}</CardTitle>
+          <Badge variant={job.budget_type === 'fixed' ? 'outline' : 'default'} className="whitespace-nowrap">
             {job.budget_type === 'fixed' ? 'Fixed' : 'Hourly'}
           </Badge>
         </div>
         <div className="flex items-center text-sm text-muted-foreground">
-          <Clock className="h-4 w-4 mr-1" />
-          {job.created_at && formatDistanceToNow(new Date(job.created_at), { addSuffix: true })}
+          <Clock className="h-4 w-4 mr-1 flex-shrink-0" />
+          <span className="truncate">
+            {job.created_at && formatDistanceToNow(new Date(job.created_at), { addSuffix: true })}
+          </span>
         </div>
       </CardHeader>
       <CardContent className="flex-grow">
-        <p className="text-muted-foreground mb-4">
+        <p className="text-muted-foreground mb-4 line-clamp-3">
           {truncateDescription(job.description)}
         </p>
         <div className="flex flex-wrap gap-2 mb-4">
@@ -51,18 +53,18 @@ export function JobCard({ job, onClick }: JobCardProps) {
           )}
         </div>
         <div className="flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
-          <span>
+          <span className="whitespace-nowrap">
             Budget: ${job.budget_min} - ${job.budget_max}
             {job.budget_type === 'hourly' && '/hr'}
           </span>
           {job.experience_level && (
-            <span>
+            <span className="whitespace-nowrap">
               {job.experience_level.charAt(0).toUpperCase() + job.experience_level.slice(1)} level
             </span>
           )}
         </div>
       </CardContent>
-      <CardFooter className="pt-0 justify-end">
+      <CardFooter className="pt-2 border-t mt-auto justify-end">
         <Button variant="ghost" size="sm" onClick={(e) => {
           e.stopPropagation();
           onClick(job);

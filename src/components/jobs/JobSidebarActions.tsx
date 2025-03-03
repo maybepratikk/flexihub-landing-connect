@@ -1,5 +1,4 @@
 
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Job } from '@/lib/supabase';
@@ -34,26 +33,26 @@ export function JobSidebarActions({
   
   return (
     <div className="p-4 border-t">
-      {/* Only show the apply button if canApply is true and job status is open */}
-      {canApply && job.status === 'open' && (
-        <>
-          {showApplicationForm ? (
-            <Button variant="outline" onClick={onShowApplicationForm} className="w-full">
-              Cancel Application
-            </Button>
-          ) : (
-            <Button onClick={onShowApplicationForm} className="w-full">
-              Apply for this Job
-            </Button>
-          )}
-        </>
-      )}
-      
       {/* Show application status if the user has applied */}
       {hasApplied && (
         <div className="mb-4">
           <ApplicationStatus status={hasApplied.status || 'pending'} compact />
         </div>
+      )}
+      
+      {/* Only show the apply button if canApply is true and job status is open */}
+      {canApply && job.status === 'open' && (
+        <>
+          {showApplicationForm ? (
+            <Button variant="outline" onClick={onShowApplicationForm} className="w-full mb-2">
+              Cancel Application
+            </Button>
+          ) : (
+            <Button onClick={onShowApplicationForm} className="w-full mb-2">
+              Apply for this Job
+            </Button>
+          )}
+        </>
       )}
       
       {/* Show view applications button for job owners */}
