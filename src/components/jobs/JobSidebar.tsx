@@ -1,13 +1,12 @@
 
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   getJobById, 
   hasAppliedToJob,
   Job,
   applyForJobWithPitch,
-  updateJobStatus
 } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -23,7 +22,7 @@ interface JobSidebarProps {
 }
 
 export function JobSidebar({ jobId, onClose }: JobSidebarProps) {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
@@ -121,17 +120,17 @@ export function JobSidebar({ jobId, onClose }: JobSidebarProps) {
     );
   }
 
-  // Determine if user is a freelancer based on user_metadata
-  const userType = user && user.user_metadata ? user.user_metadata.user_type : undefined;
+  // Get user type from user metadata
+  const userType = user?.user_metadata?.user_type;
   const isFreelancer = userType === 'freelancer';
   const isJobOwner = job.client_id === user?.id;
   
   // A user can apply if they are:
-  // 1. A freelancer
+  // 1. A freelancer (user_type is 'freelancer')
   // 2. Not the job owner
   // 3. Haven't already applied
   // 4. The job is still open
-  const canApply = Boolean(isFreelancer && !isJobOwner && !hasApplied && job.status === 'open');
+  const canApply = isFreelancer && !isJobOwner && !hasApplied && job.status === 'open';
   
   console.log("Job sidebar state:", { 
     userType,
@@ -140,7 +139,8 @@ export function JobSidebar({ jobId, onClose }: JobSidebarProps) {
     canApply, 
     hasApplied, 
     jobStatus: job.status,
-    userObject: user
+    userObject: user,
+    userMetadata: user?.user_metadata
   });
 
   return (

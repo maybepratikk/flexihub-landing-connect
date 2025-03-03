@@ -100,7 +100,8 @@ export default function JobDetailPage() {
     );
   }
 
-  const userType = user && 'user_metadata' in user ? (user.user_metadata as any).user_type : undefined;
+  // Get user type from user metadata
+  const userType = user?.user_metadata?.user_type;
   const isFreelancer = userType === 'freelancer';
   const isJobOwner = job.client_id === user?.id;
   // Only freelancers who don't own the job and haven't applied can apply
@@ -112,7 +113,8 @@ export default function JobDetailPage() {
     isJobOwner, 
     canApply, 
     hasApplied,
-    jobStatus: job.status
+    jobStatus: job.status,
+    userMetadata: user?.user_metadata
   });
 
   return (

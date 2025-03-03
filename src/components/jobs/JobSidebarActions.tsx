@@ -40,8 +40,8 @@ export function JobSidebarActions({
         </div>
       )}
       
-      {/* Only show the apply button if canApply is true and job status is open */}
-      {canApply && job.status === 'open' && (
+      {/* Show the apply button for freelancers who haven't applied and the job is open */}
+      {canApply && job.status === 'open' && !hasApplied && (
         <>
           {showApplicationForm ? (
             <Button variant="outline" onClick={onShowApplicationForm} className="w-full mb-2">

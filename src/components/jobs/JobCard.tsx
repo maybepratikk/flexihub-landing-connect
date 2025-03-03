@@ -19,7 +19,7 @@ export function JobCard({ job, onClick }: JobCardProps) {
 
   return (
     <Card 
-      className="hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col" 
+      className="hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col w-full" 
       onClick={() => onClick(job)}
     >
       <CardHeader className="pb-2">

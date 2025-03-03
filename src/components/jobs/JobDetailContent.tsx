@@ -39,7 +39,7 @@ export function JobDetailContent({
       </CardContent>
       <CardFooter className="flex flex-wrap gap-3 justify-between items-center border-t pt-4 pb-4">
         <div>
-          {canApply && job.status === 'open' && (
+          {canApply && job.status === 'open' && !hasApplied && (
             <>
               {showApplicationForm ? (
                 <Button variant="outline" onClick={() => setShowApplicationForm(false)}>
