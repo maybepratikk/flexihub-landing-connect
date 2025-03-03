@@ -540,17 +540,22 @@ export async function hasAppliedToJob(jobId: string, freelancerId: string) {
 
 // Function to update a job's status
 export async function updateJobStatus(jobId: string, status: 'open' | 'in_progress' | 'completed' | 'cancelled') {
-  const { data, error } = await supabase
-    .from('jobs')
-    .update({ status })
-    .eq('id', jobId)
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error updating job status:', error);
+  try {
+    const { data, error } = await supabase
+      .from('jobs')
+      .update({ status })
+      .eq('id', jobId)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating job status:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Exception in updateJobStatus:', error);
     return null;
   }
-  
-  return data;
 }
