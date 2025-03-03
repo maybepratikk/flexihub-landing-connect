@@ -1,6 +1,7 @@
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
+import { AuthProvider } from './contexts/AuthContext';
 
 import { MainLayout } from './components/layout/MainLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -23,54 +24,56 @@ import ContractPage from './pages/ContractPage';
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/verify" element={<VerificationSentPage />} />
-        <Route path="/signin" element={<SignInPage />} />
-        <Route path="/signup" element={<SignUpPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/verify" element={<VerificationSentPage />} />
+          <Route path="/signin" element={<SignInPage />} />
+          <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-        <Route element={<MainLayout />}>
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/jobs" element={
-            <ProtectedRoute>
-              <JobsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/jobs/:jobId" element={
-            <ProtectedRoute>
-              <JobDetailPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/jobs/:jobId/applications" element={
-            <ProtectedRoute>
-              <ApplicationsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/post-job" element={
-            <ProtectedRoute>
-              <PostJobPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/onboarding" element={
-            <ProtectedRoute>
-              <OnboardingPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/contracts/:contractId" element={
-            <ProtectedRoute>
-              <ContractPage />
-            </ProtectedRoute>
-          } />
-          <Route path="*" element={<NotFound />} />
-        </Route>
-      </Routes>
-      <Toaster />
+          <Route element={<MainLayout />}>
+            <Route path="/home" element={<HomePage />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/jobs" element={
+              <ProtectedRoute>
+                <JobsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/jobs/:jobId" element={
+              <ProtectedRoute>
+                <JobDetailPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/jobs/:jobId/applications" element={
+              <ProtectedRoute>
+                <ApplicationsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/post-job" element={
+              <ProtectedRoute>
+                <PostJobPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/onboarding" element={
+              <ProtectedRoute>
+                <OnboardingPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/contracts/:contractId" element={
+              <ProtectedRoute>
+                <ContractPage />
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+        </Routes>
+        <Toaster />
+      </AuthProvider>
     </BrowserRouter>
   );
 }
