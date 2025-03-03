@@ -202,6 +202,8 @@ export type Database = {
       }
       job_applications: {
         Row: {
+          contact_email: string | null
+          contact_phone: string | null
           cover_letter: string | null
           created_at: string | null
           freelancer_id: string | null
@@ -212,6 +214,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
           cover_letter?: string | null
           created_at?: string | null
           freelancer_id?: string | null
@@ -222,6 +226,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
           cover_letter?: string | null
           created_at?: string | null
           freelancer_id?: string | null
