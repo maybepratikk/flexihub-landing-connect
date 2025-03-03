@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -65,7 +64,6 @@ export default function JobDetailPage() {
       setJob(fetchedJob);
       
       if (user && fetchedJob) {
-        // Check if user has already applied
         const application = await hasAppliedToJob(jobId, user.id);
         setHasApplied(application);
       }
@@ -124,9 +122,11 @@ export default function JobDetailPage() {
     );
   }
 
-  const isClient = user?.user_type === 'client';
+  const userType = user && 'user_metadata' in user ? (user.user_metadata as any).user_type : undefined;
+
+  const isClient = userType === 'client';
   const isJobOwner = job.client_id === user?.id;
-  const canApply = user?.user_type === 'freelancer' && !isJobOwner && !hasApplied;
+  const canApply = userType === 'freelancer' && !isJobOwner && !hasApplied;
 
   return (
     <div className="container mx-auto py-10">

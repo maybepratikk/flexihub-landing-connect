@@ -40,6 +40,7 @@ export type ClientProfile = {
   updated_at?: string;
 };
 
+// Updated Job type to include profiles
 export type Job = {
   id: string;
   client_id: string;
@@ -55,8 +56,14 @@ export type Job = {
   status: 'open' | 'in_progress' | 'completed' | 'cancelled';
   created_at?: string;
   updated_at?: string;
+  // Add profiles property to match what's returned from the database
+  profiles?: {
+    full_name?: string;
+    avatar_url?: string;
+  };
 };
 
+// Updated JobApplication type to include profiles and freelancer_profiles
 export type JobApplication = {
   id: string;
   job_id: string;
@@ -67,8 +74,21 @@ export type JobApplication = {
   status: 'pending' | 'accepted' | 'rejected';
   created_at?: string;
   updated_at?: string;
+  // Add profiles property to match what's returned from the database
+  profiles?: {
+    full_name?: string;
+    avatar_url?: string;
+  };
+  // Add freelancer_profiles property to match what's returned from the database
+  freelancer_profiles?: {
+    bio?: string;
+    skills?: string[];
+    years_experience?: number;
+    portfolio_links?: string[];
+  };
 };
 
+// Updated Contract type to include jobs and profiles
 export type Contract = {
   id: string;
   job_id: string;
@@ -80,8 +100,29 @@ export type Contract = {
   status: 'active' | 'completed' | 'terminated';
   created_at?: string;
   updated_at?: string;
+  // Add profiles property to match what's returned from the database
+  profiles?: {
+    client_id?: {
+      id?: string;
+      full_name?: string;
+      avatar_url?: string;
+    };
+    freelancer_id?: {
+      id?: string;
+      full_name?: string;
+      avatar_url?: string;
+    };
+  };
+  // Add jobs property to match what's returned from the database
+  jobs?: {
+    title?: string;
+    description?: string;
+    budget_type?: 'fixed' | 'hourly';
+    id?: string;
+  };
 };
 
+// Updated ChatMessage type to include profiles
 export type ChatMessage = {
   id: string;
   contract_id: string;
@@ -89,6 +130,11 @@ export type ChatMessage = {
   message: string;
   created_at?: string;
   read: boolean;
+  // Add profiles property to match what's returned from the database
+  profiles?: {
+    full_name?: string;
+    avatar_url?: string;
+  };
 };
 
 // Function to get user profile

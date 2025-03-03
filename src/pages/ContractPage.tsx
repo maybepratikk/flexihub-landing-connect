@@ -88,7 +88,7 @@ export default function ContractPage() {
                 <h3 className="text-sm font-semibold mb-1">Status</h3>
                 <Badge variant={
                   contract.status === 'active' ? 'default' : 
-                  contract.status === 'completed' ? 'success' : 
+                  contract.status === 'completed' ? 'secondary' : 
                   'secondary'
                 }>
                   {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
@@ -122,7 +122,7 @@ export default function ContractPage() {
                   <div className="mt-2">
                     <h4 className="font-medium">{contract.jobs.title}</h4>
                     <p className="text-sm text-muted-foreground truncate">
-                      {contract.jobs.description.substring(0, 100)}...
+                      {contract.jobs.description && contract.jobs.description.substring(0, 100)}...
                     </p>
                     <Button 
                       variant="link" 
