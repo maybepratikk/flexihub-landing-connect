@@ -86,7 +86,7 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
           freelancer_id: updatedApplication.freelancer_id,
           client_id: user!.id,
           rate: updatedApplication.proposed_rate,
-          status: 'active',
+          status: 'active' as 'active' | 'completed' | 'terminated',
           start_date: new Date().toISOString()
         };
         

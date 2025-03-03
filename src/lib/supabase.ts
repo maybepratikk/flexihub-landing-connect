@@ -499,7 +499,11 @@ export async function getClientContracts(clientId: string) {
   try {
     const { data, error } = await supabase
       .from('contracts')
-      .select('*, jobs!inner(*), profiles!inner(id, full_name, avatar_url)')
+      .select(`
+        *,
+        jobs(*),
+        profiles!contracts_freelancer_id_fkey(id, full_name, avatar_url)
+      `)
       .eq('client_id', clientId)
       .order('created_at', { ascending: false });
     

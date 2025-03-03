@@ -40,7 +40,7 @@ export function JobApplicationsList({
           freelancer_id: applicantId,
           client_id: updatedApplication.jobs?.client_id || '',
           rate: rate,
-          status: 'active',
+          status: 'active' as 'active' | 'completed' | 'terminated',
           start_date: new Date().toISOString()
         };
         
