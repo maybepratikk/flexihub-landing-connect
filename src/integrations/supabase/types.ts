@@ -50,6 +50,67 @@ export type Database = {
           },
         ]
       }
+      contracts: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          end_date: string | null
+          freelancer_id: string | null
+          id: string
+          job_id: string | null
+          rate: number
+          start_date: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          freelancer_id?: string | null
+          id?: string
+          job_id?: string | null
+          rate: number
+          start_date?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          freelancer_id?: string | null
+          id?: string
+          job_id?: string | null
+          rate?: number
+          start_date?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_freelancer_id_fkey"
+            columns: ["freelancer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       freelancer_profiles: {
         Row: {
           availability: string | null
@@ -92,6 +153,113 @@ export type Database = {
             foreignKeyName: "freelancer_profiles_id_fkey"
             columns: ["id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_applications: {
+        Row: {
+          cover_letter: string | null
+          created_at: string | null
+          freelancer_id: string | null
+          id: string
+          job_id: string | null
+          proposed_rate: number | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          cover_letter?: string | null
+          created_at?: string | null
+          freelancer_id?: string | null
+          id?: string
+          job_id?: string | null
+          proposed_rate?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          cover_letter?: string | null
+          created_at?: string | null
+          freelancer_id?: string | null
+          id?: string
+          job_id?: string | null
+          proposed_rate?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_applications_freelancer_id_fkey"
+            columns: ["freelancer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          budget_max: number | null
+          budget_min: number | null
+          budget_type: string
+          category: string
+          client_id: string | null
+          created_at: string | null
+          description: string
+          duration: string | null
+          experience_level: string | null
+          id: string
+          skills_required: string[]
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          budget_max?: number | null
+          budget_min?: number | null
+          budget_type: string
+          category: string
+          client_id?: string | null
+          created_at?: string | null
+          description: string
+          duration?: string | null
+          experience_level?: string | null
+          id?: string
+          skills_required: string[]
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          budget_max?: number | null
+          budget_min?: number | null
+          budget_type?: string
+          category?: string
+          client_id?: string | null
+          created_at?: string | null
+          description?: string
+          duration?: string | null
+          experience_level?: string | null
+          id?: string
+          skills_required?: string[]
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },

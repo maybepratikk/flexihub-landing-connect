@@ -14,6 +14,9 @@ import VerificationSentPage from "./pages/VerificationSentPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import DashboardPage from "./pages/DashboardPage";
+import HomePage from "./pages/HomePage";
+import PostJobPage from "./pages/PostJobPage";
+import JobDetailPage from "./pages/JobDetailPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,10 +35,13 @@ const App = () => (
             <Route path="/signup" element={<SignUpPage />} />
             <Route path="/verification-sent" element={<VerificationSentPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/jobs" element={<HomePage />} />
+            <Route path="/jobs/:jobId" element={<JobDetailPage />} />
             
             {/* Protected Routes */}
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/post-job" element={<PostJobPage />} />
             
             {/* Redirect index to the landing page */}
             <Route path="/index" element={<Navigate to="/" replace />} />
