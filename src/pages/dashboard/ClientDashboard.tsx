@@ -1,16 +1,26 @@
+
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getClientProfile, getClientJobs, getClientContracts, getJobApplications, updateApplicationStatus, createContract, updateJobStatus } from '@/lib/supabase';
-import { Loader2, Search, FileCheck, Briefcase, Plus, Clock, CheckCircle, XCircle } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  getClientProfile, 
+  getClientJobs, 
+  getClientContracts, 
+  getJobApplications, 
+  updateApplicationStatus, 
+  createContract, 
+  updateJobStatus 
+} from '@/lib/supabase';
+
+// Import our new components
+import { ClientDashboardHeader } from '@/components/dashboard/client/ClientDashboardHeader';
+import { ClientStatsCards } from '@/components/dashboard/client/ClientStatsCards';
+import { ClientProfileCard } from '@/components/dashboard/client/ClientProfileCard';
+import { ClientJobsTab } from '@/components/dashboard/client/ClientJobsTab';
+import { ClientContractsTab } from '@/components/dashboard/client/ClientContractsTab';
 
 export function ClientDashboard() {
   const { user } = useAuth();
@@ -165,75 +175,15 @@ export function ClientDashboard() {
   
   return (
     <div className="space-y-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Client Dashboard</h1>
-          <p className="text-muted-foreground">
-            Manage your jobs and contracts
-          </p>
-        </div>
-        <Button onClick={() => navigate('/post-job')}>
-          <Plus className="mr-2 h-4 w-4" /> Post a Job
-        </Button>
-      </div>
+      <ClientDashboardHeader />
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium">Open Jobs</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <Briefcase className="h-5 w-5 text-green-500" />
-              <span className="text-2xl font-bold">{openJobs}</span>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium">In Progress Jobs</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-blue-500" />
-              <span className="text-2xl font-bold">{inProgressJobs}</span>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium">Completed Jobs</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <FileCheck className="h-5 w-5 text-gray-500" />
-              <span className="text-2xl font-bold">{completedJobs}</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <ClientStatsCards 
+        openJobs={openJobs} 
+        inProgressJobs={inProgressJobs} 
+        completedJobs={completedJobs} 
+      />
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Company Profile</CardTitle>
-          <CardDescription>
-            Your company's information
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p><strong>Company Name:</strong> {profile?.company_name}</p>
-          <p><strong>Industry:</strong> {profile?.industry}</p>
-          <p><strong>Company Size:</strong> {profile?.company_size}</p>
-          <p><strong>Description:</strong> {profile?.company_description}</p>
-        </CardContent>
-        <CardFooter>
-          <Button variant="outline" asChild>
-            <Link to="/profile">Update Profile</Link>
-          </Button>
-        </CardFooter>
-      </Card>
+      <ClientProfileCard profile={profile} />
       
       <Tabs defaultValue="jobs" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
@@ -242,216 +192,17 @@ export function ClientDashboard() {
         </TabsList>
         
         <TabsContent value="jobs" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Job Postings</CardTitle>
-              <CardDescription>
-                Manage your active and past job postings
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {jobs.length === 0 ? (
-                <div className="text-center py-6">
-                  <Briefcase className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-muted-foreground">You haven't posted any jobs yet</p>
-                  <Button variant="outline" className="mt-4" onClick={() => navigate('/post-job')}>
-                    Post Your First Job
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-8">
-                  {jobs.map((job) => (
-                    <div key={job.id} className="border rounded-lg overflow-hidden">
-                      <div className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-semibold text-lg">
-                              <Link to={`/jobs/${job.id}`} className="hover:underline">
-                                {job.title}
-                              </Link>
-                            </h3>
-                            <p className="text-sm text-muted-foreground mb-2">
-                              Posted {job.created_at ? formatDistanceToNow(new Date(job.created_at), { addSuffix: true }) : ''}
-                            </p>
-                            <div className="mt-2">
-                              <Badge 
-                                variant={
-                                  job.status === 'open' ? 'secondary' : 
-                                  job.status === 'in_progress' ? 'outline' : 'destructive'
-                                }
-                              >
-                                {job.status}
-                              </Badge>
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              onClick={() => navigate(`/jobs/${job.id}`)}
-                            >
-                              View Details
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              data-testid="view-applications-button"
-                              onClick={() => loadJobApplications(job.id)}
-                            >
-                              {loadingApplications[job.id] ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                "View Applications"
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {jobApplications[job.id] && (
-                        <div className="border-t bg-muted/30 p-4">
-                          <h4 className="font-medium mb-3">Applications ({jobApplications[job.id].length})</h4>
-                          
-                          {jobApplications[job.id].length === 0 ? (
-                            <p className="text-sm text-muted-foreground">No applications yet.</p>
-                          ) : (
-                            <div className="space-y-4">
-                              {jobApplications[job.id].map((application) => (
-                                <div key={application.id} className="bg-background p-4 rounded-md border">
-                                  <div className="flex justify-between">
-                                    <div className="flex items-center gap-3">
-                                      {application.profiles && (
-                                        <Avatar>
-                                          <AvatarImage src={application.profiles.avatar_url || ''} />
-                                          <AvatarFallback>{application.profiles.full_name?.charAt(0) || 'U'}</AvatarFallback>
-                                        </Avatar>
-                                      )}
-                                      <div>
-                                        <p className="font-medium">{application.profiles?.full_name}</p>
-                                        <p className="text-sm text-muted-foreground">
-                                          Proposed Rate: ${application.proposed_rate} {job.budget_type === 'hourly' ? '/hr' : ''}
-                                        </p>
-                                      </div>
-                                    </div>
-                                    
-                                    {application.status === 'pending' ? (
-                                      <div className="flex gap-2">
-                                        <Button 
-                                          size="sm" 
-                                          variant="outline" 
-                                          className="text-destructive"
-                                          onClick={() => handleStatusUpdate(job.id, application.id, 'rejected')}
-                                        >
-                                          <XCircle className="h-4 w-4 mr-1" /> Reject
-                                        </Button>
-                                        <Button 
-                                          size="sm"
-                                          onClick={() => handleStatusUpdate(job.id, application.id, 'accepted')}
-                                        >
-                                          <CheckCircle className="h-4 w-4 mr-1" /> Accept
-                                        </Button>
-                                      </div>
-                                    ) : (
-                                      <Badge 
-                                        variant={application.status === 'accepted' ? 'default' : 'secondary'}
-                                      >
-                                        {application.status === 'accepted' ? 'Hired' : 'Rejected'}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  
-                                  <div className="mt-2">
-                                    <p className="text-sm whitespace-pre-line line-clamp-2">
-                                      {application.pitch || 'No pitch provided.'}
-                                    </p>
-                                    <Button 
-                                      size="sm" 
-                                      variant="link" 
-                                      onClick={() => navigate(`/jobs/${job.id}/applications`)}
-                                      className="p-0 h-auto mt-1"
-                                    >
-                                      View full application
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))}
-                              
-                              <Button
-                                size="sm"
-                                variant="outline" 
-                                className="w-full"
-                                onClick={() => navigate(`/jobs/${job.id}/applications`)}
-                              >
-                                View All Applications in Detail
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ClientJobsTab 
+            jobs={jobs}
+            loadJobApplications={loadJobApplications}
+            loadingApplications={loadingApplications}
+            jobApplications={jobApplications}
+            handleStatusUpdate={handleStatusUpdate}
+          />
         </TabsContent>
         
         <TabsContent value="contracts" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Contracts</CardTitle>
-              <CardDescription>
-                Active and past contracts with freelancers
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {contracts.length === 0 ? (
-                <div className="text-center py-6">
-                  <p className="text-muted-foreground">No contracts found</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {contracts.map((contract) => (
-                    <div key={contract.id} className="p-4 border rounded-lg">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold text-lg">
-                            {contract.jobs?.title}
-                          </h3>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            Started {contract.start_date ? formatDistanceToNow(new Date(contract.start_date), { addSuffix: true }) : ''}
-                          </p>
-                          <p className="text-sm">
-                            <strong>Freelancer:</strong> {contract.profiles?.full_name}
-                          </p>
-                          <p className="text-sm">
-                            <strong>Rate:</strong> ${contract.rate}/{contract.jobs?.budget_type === 'hourly' ? 'hr' : 'fixed'}
-                          </p>
-                          <div className="mt-2">
-                            <Badge 
-                              variant={
-                                contract.status === 'active' ? 'secondary' : 
-                                contract.status === 'completed' ? 'outline' : 'destructive'
-                              }
-                            >
-                              {contract.status}
-                            </Badge>
-                          </div>
-                        </div>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          onClick={() => navigate(`/contracts/${contract.id}`)}
-                        >
-                          View Details
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ClientContractsTab contracts={contracts} />
         </TabsContent>
       </Tabs>
     </div>
