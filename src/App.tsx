@@ -1,8 +1,9 @@
+
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
 
-import MainLayout from './components/layout/MainLayout';
-import ProtectedRoute from './components/auth/ProtectedRoute';
+import { MainLayout } from './components/layout/MainLayout';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
 import LandingPage from './pages/LandingPage';
 import HomePage from './pages/HomePage';
