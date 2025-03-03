@@ -410,7 +410,7 @@ export async function getJobApplications(jobId: string) {
       .from('job_applications')
       .select(`
         *,
-        profiles(id, full_name, avatar_url),
+        profiles!inner(id, full_name, avatar_url),
         freelancer_profiles(bio, skills, years_experience, portfolio_links)
       `)
       .eq('job_id', jobId);

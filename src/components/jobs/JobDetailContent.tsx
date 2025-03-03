@@ -61,7 +61,10 @@ export function JobDetailContent({
         </div>
         
         {isJobOwner && (
-          <Button onClick={() => navigate(`/dashboard?view=applications&jobId=${job.id}`)}>
+          <Button 
+            onClick={() => navigate(`/dashboard?view=applications&jobId=${job.id}`)}
+            data-testid="view-applications-detail-button"
+          >
             View Applications
           </Button>
         )}
