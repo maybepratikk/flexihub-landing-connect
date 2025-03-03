@@ -1,308 +1,318 @@
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
+import { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '@/contexts/AuthContext';
+import { 
+  getJobById, 
+  hasAppliedToJob,
+  Job,
+  JobApplication,
+  applyForJobWithPitch
+} from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Job, hasAppliedToJob, applyForJobWithPitch } from '@/lib/supabase';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, Calendar, Clock, DollarSign, Award } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { formatDistanceToNow } from 'date-fns';
+import { useToast } from '@/components/ui/use-toast';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { X } from 'lucide-react';
+
+const applicationSchema = z.object({
+  cover_letter: z.string().min(10, {
+    message: "Cover letter must be at least 10 characters.",
+  }),
+  pitch: z.string().min(10, {
+    message: "Pitch must be at least 10 characters.",
+  }),
+  proposed_rate: z.coerce.number().min(5, {
+    message: "Proposed rate must be at least $5.",
+  }),
+});
+
+type ApplicationFormData = z.infer<typeof applicationSchema>;
 
 interface JobSidebarProps {
-  job: Job | null;
-  isOpen: boolean;
+  jobId: string;
   onClose: () => void;
 }
 
-export function JobSidebar({ job, isOpen, onClose }: JobSidebarProps) {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  
-  const [loading, setLoading] = useState(false);
-  const [hasApplied, setHasApplied] = useState<boolean>(false);
-  const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
+export function JobSidebar({ jobId, onClose }: JobSidebarProps) {
+  const { user } = useContext(AuthContext);
+  const [job, setJob] = useState<Job | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
-  
-  // Application form state
-  const [coverLetter, setCoverLetter] = useState('');
-  const [pitch, setPitch] = useState('');
-  const [proposedRate, setProposedRate] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  
+  const [hasApplied, setHasApplied] = useState<{ id?: string, status?: string } | null>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const form = useForm<ApplicationFormData>({
+    resolver: zodResolver(applicationSchema),
+    defaultValues: {
+      cover_letter: "",
+      pitch: "",
+      proposed_rate: 0,
+    },
+  });
+
   useEffect(() => {
-    const checkApplicationStatus = async () => {
-      if (!job || !user) return;
+    if (!jobId) return;
+
+    const fetchJob = async () => {
+      setLoading(true);
+      const fetchedJob = await getJobById(jobId);
+      setJob(fetchedJob);
       
-      try {
-        const application = await hasAppliedToJob(job.id, user.id);
-        if (application) {
-          setHasApplied(true);
-          setApplicationStatus(application.status);
-        } else {
-          setHasApplied(false);
-          setApplicationStatus(null);
-        }
-      } catch (error) {
-        console.error('Error checking application status:', error);
+      if (user && fetchedJob) {
+        const application = await hasAppliedToJob(jobId, user.id);
+        setHasApplied(application);
       }
+      
+      setLoading(false);
     };
-    
-    checkApplicationStatus();
-  }, [job, user]);
-  
-  const handleApply = () => {
-    if (!user) {
-      toast({
-        title: 'Authentication Required',
-        description: 'You need to sign in to apply for jobs',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    if (user.user_metadata?.user_type !== 'freelancer') {
-      toast({
-        title: 'Action Not Allowed',
-        description: 'Only freelancers can apply for jobs',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    setShowApplicationForm(true);
-  };
-  
-  const submitApplication = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+
+    fetchJob();
+  }, [jobId, user]);
+
+  const onSubmit = async (data: ApplicationFormData) => {
     if (!user || !job) return;
-    
-    setSubmitting(true);
-    
+
     try {
-      const application = {
+      const application = await applyForJobWithPitch({
         job_id: job.id,
         freelancer_id: user.id,
-        cover_letter: coverLetter,
-        pitch: pitch,
-        proposed_rate: proposedRate ? parseFloat(proposedRate) : undefined
-      };
-      
-      const result = await applyForJobWithPitch(application);
-      
-      if (result) {
-        toast({
-          title: 'Application Submitted',
-          description: 'Your application has been submitted successfully',
-        });
+        cover_letter: data.cover_letter,
+        pitch: data.pitch,
+        proposed_rate: data.proposed_rate
+      });
+
+      if (application) {
+        setHasApplied({ id: application.id, status: application.status });
         setShowApplicationForm(false);
-        setHasApplied(true);
-        setApplicationStatus('pending');
-      } else {
-        throw new Error('Failed to submit application');
+        toast({
+          title: "Application Submitted",
+          description: "Your application has been submitted successfully.",
+          variant: "default",
+        });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error submitting application:', error);
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to submit application',
-        variant: 'destructive'
+        title: "Error",
+        description: "There was an error submitting your application. Please try again.",
+        variant: "destructive",
       });
-    } finally {
-      setSubmitting(false);
     }
   };
-  
-  if (!job) return null;
-  
-  const isFreelancer = user && user.user_metadata?.user_type === 'freelancer';
-  const isOwner = user && user.id === job.client_id;
-  
+
+  if (loading) {
+    return (
+      <div className="h-full flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!job) {
+    return (
+      <div className="h-full p-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Job not found</h2>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        <p>This job may have been removed or is no longer available.</p>
+      </div>
+    );
+  }
+
+  const userType = user && 'user_metadata' in user ? (user.user_metadata as any).user_type : undefined;
+
+  const isClient = userType === 'client';
+  const isJobOwner = job.client_id === user?.id;
+  const canApply = userType === 'freelancer' && !isJobOwner && !hasApplied;
+
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="sm:max-w-md md:max-w-lg overflow-y-auto">
-        <SheetHeader className="pb-4">
-          <SheetTitle className="text-2xl">{job.title}</SheetTitle>
-          <SheetDescription>
-            Posted {job.created_at ? formatDistanceToNow(new Date(job.created_at), { addSuffix: true }) : ''}
-          </SheetDescription>
-        </SheetHeader>
-        
-        <div className="space-y-6">
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary">{job.category}</Badge>
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex justify-between items-center p-4 border-b">
+        <h2 className="text-xl font-bold truncate">{job.title}</h2>
+        <Button variant="ghost" size="icon" onClick={onClose}>
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div>
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm text-muted-foreground">Posted {job.created_at && formatDistanceToNow(new Date(job.created_at), { addSuffix: true })}</p>
+            </div>
             <Badge variant={job.budget_type === 'fixed' ? 'outline' : 'default'}>
-              {job.budget_type === 'fixed' ? 'Fixed Price' : 'Hourly Rate'}
+              {job.budget_type === 'fixed' ? 'Fixed' : 'Hourly'}
             </Badge>
-            {job.experience_level && (
-              <Badge variant="outline">
-                {job.experience_level === 'entry' ? 'Entry Level' : 
-                 job.experience_level === 'intermediate' ? 'Intermediate' : 'Expert'}
+          </div>
+        </div>
+        
+        <div>
+          <h3 className="font-semibold mb-2">Description</h3>
+          <p className="whitespace-pre-line text-sm">{job.description}</p>
+        </div>
+
+        <div>
+          <h3 className="font-semibold mb-2">Skills Required</h3>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {job.skills_required.map((skill, index) => (
+              <Badge key={index} variant="secondary">
+                {skill}
               </Badge>
-            )}
+            ))}
           </div>
-          
-          <Separator />
-          
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <h3 className="font-semibold mb-2">Job Description</h3>
-            <div className="text-muted-foreground whitespace-pre-line">
-              {job.description}
-            </div>
+            <h3 className="font-semibold mb-1 text-sm">Budget</h3>
+            <p className="text-sm">${job.budget_min} - ${job.budget_max} {job.budget_type === 'hourly' && '/hr'}</p>
           </div>
-          
-          <Separator />
-          
           <div>
-            <h3 className="font-semibold mb-2">Skills Required</h3>
-            <div className="flex flex-wrap gap-2">
-              {job.skills_required && job.skills_required.map((skill: string, index: number) => (
-                <Badge key={index} variant="outline">{skill}</Badge>
-              ))}
+            <h3 className="font-semibold mb-1 text-sm">Duration</h3>
+            <p className="text-sm">{job.duration ? job.duration.charAt(0).toUpperCase() + job.duration.slice(1) + ' term' : 'Not specified'}</p>
+          </div>
+          <div>
+            <h3 className="font-semibold mb-1 text-sm">Experience Level</h3>
+            <p className="text-sm">{job.experience_level ? job.experience_level.charAt(0).toUpperCase() + job.experience_level.slice(1) : 'Not specified'}</p>
+          </div>
+          <div>
+            <h3 className="font-semibold mb-1 text-sm">Category</h3>
+            <p className="text-sm">{job.category}</p>
+          </div>
+        </div>
+        
+        {job.profiles && (
+          <div className="mt-4">
+            <h3 className="font-semibold mb-2 text-sm">Posted by</h3>
+            <div className="flex items-center gap-2">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={job.profiles.avatar_url || ''} />
+                <AvatarFallback>{job.profiles.full_name?.charAt(0) || 'U'}</AvatarFallback>
+              </Avatar>
+              <span className="text-sm">{job.profiles.full_name}</span>
             </div>
           </div>
-          
-          <div className="space-y-4 pt-2">
-            <div className="flex items-start gap-3">
-              <DollarSign className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <h3 className="font-medium">Budget</h3>
-                <p>
-                  ${job.budget_min} - ${job.budget_max}
-                  {job.budget_type === 'hourly' && '/hr'}
-                </p>
-              </div>
-            </div>
-            
-            {job.duration && (
-              <div className="flex items-start gap-3">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <h3 className="font-medium">Duration</h3>
-                  <p>
-                    {job.duration === 'short' ? 'Short Term (&lt; 1 month)' : 
-                     job.duration === 'medium' ? 'Medium Term (1-3 months)' : 'Long Term (3+ months)'}
-                  </p>
-                </div>
-              </div>
-            )}
-            
-            {job.experience_level && (
-              <div className="flex items-start gap-3">
-                <Award className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <h3 className="font-medium">Experience Level</h3>
-                  <p>
-                    {job.experience_level === 'entry' ? 'Entry Level' : 
-                     job.experience_level === 'intermediate' ? 'Intermediate' : 'Expert'}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          {showApplicationForm && isFreelancer && (
-            <div className="space-y-4 pt-4">
-              <h3 className="font-semibold">Apply for this Job</h3>
-              <form onSubmit={submitApplication} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1" htmlFor="coverLetter">
-                    Cover Letter
-                  </label>
-                  <Textarea
-                    id="coverLetter"
-                    placeholder="Introduce yourself and explain why you're suitable for this job..."
-                    className="min-h-[100px]"
-                    value={coverLetter}
-                    onChange={(e) => setCoverLetter(e.target.value)}
-                    required
-                  />
-                </div>
+        )}
+        
+        <Separator />
+        
+        {showApplicationForm && (
+          <div className="space-y-4">
+            <h3 className="font-semibold">Apply for this Job</h3>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="cover_letter"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cover Letter</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Introduce yourself and explain why you're interested in this job."
+                          className="min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                <div>
-                  <label className="block text-sm font-medium mb-1" htmlFor="pitch">
-                    Pitch Yourself
-                  </label>
-                  <Textarea
-                    id="pitch"
-                    placeholder="Detail your experience, relevant projects, and why you're the perfect fit. Include portfolio links or anything that showcases your skills."
-                    className="min-h-[150px]"
-                    value={pitch}
-                    onChange={(e) => setPitch(e.target.value)}
-                    required
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="pitch"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pitch Yourself</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Describe your relevant experience and why you're the best fit for this job. You can include links to your portfolio, previous work, or testimonials."
+                          className="min-h-[150px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                <div>
-                  <label className="block text-sm font-medium mb-1" htmlFor="proposedRate">
-                    Proposed Rate ({job.budget_type === 'fixed' ? 'Total' : 'Hourly'} in $)
-                  </label>
-                  <Input
-                    id="proposedRate"
-                    type="number"
-                    placeholder={job.budget_type === 'fixed' ? 'Your total price' : 'Your hourly rate'}
-                    value={proposedRate}
-                    onChange={(e) => setProposedRate(e.target.value)}
-                    required
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="proposed_rate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Proposed Rate {job.budget_type === 'hourly' ? '(per hour)' : '(fixed)'}</FormLabel>
+                      <FormControl>
+                        <div className="flex items-center">
+                          <span className="mr-2">$</span>
+                          <Input type="number" {...field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                <div className="flex justify-end gap-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => setShowApplicationForm(false)}
-                    disabled={submitting}
-                  >
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" type="button" onClick={() => setShowApplicationForm(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Submitting...
-                      </>
-                    ) : (
-                      'Submit Application'
-                    )}
+                  <Button type="submit">
+                    Submit Application
                   </Button>
                 </div>
               </form>
-            </div>
-          )}
-        </div>
-        
-        <SheetFooter className="mt-6">
-          {isOwner ? (
-            <Button className="w-full" variant="default" onClick={onClose}>
-              View Applications
-            </Button>
-          ) : isFreelancer ? (
-            hasApplied ? (
-              <Button className="w-full" variant="secondary" disabled>
-                {applicationStatus === 'pending' ? 'Application Pending' : 
-                 applicationStatus === 'accepted' ? 'Application Accepted' : 'Application Rejected'}
+            </Form>
+          </div>
+        )}
+      </div>
+      
+      <div className="p-4 border-t">
+        {canApply && (
+          <>
+            {showApplicationForm ? (
+              <Button variant="outline" onClick={() => setShowApplicationForm(false)} className="w-full">
+                Cancel Application
               </Button>
             ) : (
-              <Button 
-                className="w-full" 
-                onClick={handleApply}
-                disabled={showApplicationForm}
-              >
-                Apply Now
+              <Button onClick={() => setShowApplicationForm(true)} className="w-full">
+                Apply for this Job
               </Button>
-            )
-          ) : (
-            <Button className="w-full" onClick={onClose}>
-              Sign Up to Apply
-            </Button>
-          )}
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+            )}
+          </>
+        )}
+        
+        {hasApplied && (
+          <div className="text-muted-foreground text-center">
+            You have already applied to this job. Status: {hasApplied.status}
+          </div>
+        )}
+        
+        {isJobOwner && (
+          <Button onClick={() => navigate(`/jobs/${job.id}/applications`)} className="w-full">
+            View Applications
+          </Button>
+        )}
+        
+        <Button variant="outline" onClick={() => navigate(`/jobs/${job.id}`)} className="w-full mt-2">
+          View Full Details
+        </Button>
+      </div>
+    </div>
   );
 }

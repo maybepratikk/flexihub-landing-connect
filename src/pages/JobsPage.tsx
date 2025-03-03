@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '@/contexts/AuthContext';
 import { getJobs, Job } from '@/lib/supabase';
 import { JobCard } from '@/components/jobs/JobCard';
+import { JobSidebar } from '@/components/jobs/JobSidebar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +25,7 @@ export default function JobsPage() {
     category: '',
     experience: '',
   });
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -89,7 +91,7 @@ export default function JobsPage() {
     setFilters(prev => ({ ...prev, [key]: value }));
     
     const newParams = new URLSearchParams(searchParams);
-    if (value) {
+    if (value && value !== 'all') {
       newParams.set(key, value);
     } else {
       newParams.delete(key);
@@ -104,7 +106,11 @@ export default function JobsPage() {
   };
 
   const handleJobCardClick = (job: Job) => {
-    navigate(`/jobs/${job.id}`);
+    setSelectedJobId(job.id);
+  };
+
+  const handleCloseSidebar = () => {
+    setSelectedJobId(null);
   };
 
   // Categories for filter dropdown
@@ -192,7 +198,7 @@ export default function JobsPage() {
           </Card>
         </div>
 
-        <div className="md:col-span-3">
+        <div className={`md:col-span-${selectedJobId ? '2' : '3'}`}>
           <div className="mb-6 flex gap-2">
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -230,6 +236,14 @@ export default function JobsPage() {
             </div>
           )}
         </div>
+
+        {selectedJobId && (
+          <div className="md:col-span-1 relative">
+            <div className="sticky top-4 border rounded-lg shadow-sm bg-background h-[calc(100vh-120px)] overflow-hidden">
+              <JobSidebar jobId={selectedJobId} onClose={handleCloseSidebar} />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
