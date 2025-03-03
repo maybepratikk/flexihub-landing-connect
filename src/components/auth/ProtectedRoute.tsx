@@ -1,9 +1,13 @@
 
-import { Navigate, Outlet } from 'react-router-dom';
-import { useContext } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useContext, ReactNode } from 'react';
 import { AuthContext } from '@/contexts/AuthContext';
 
-export function ProtectedRoute() {
+interface ProtectedRouteProps {
+  children: ReactNode;
+}
+
+export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { session, loading } = useContext(AuthContext);
 
   // If auth is loading, show nothing
@@ -20,6 +24,6 @@ export function ProtectedRoute() {
     return <Navigate to="/signin" replace />;
   }
 
-  // User is authenticated, render the child routes
-  return <Outlet />;
+  // User is authenticated, render the children
+  return <>{children}</>;
 }
