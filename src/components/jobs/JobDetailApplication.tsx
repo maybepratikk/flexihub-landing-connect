@@ -18,8 +18,10 @@ export function JobDetailApplication({ onSubmit, onCancel, budgetType, userEmail
       setIsSubmitting(true);
       console.log("JobDetailApplication - submitting form data:", data);
       await onSubmit(data);
+      console.log("JobDetailApplication - form submitted successfully");
     } catch (error) {
       console.error("Error in JobDetailApplication submit:", error);
+      throw error; // Rethrow the error to be handled by the form
     } finally {
       setIsSubmitting(false);
     }

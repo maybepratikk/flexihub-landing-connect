@@ -52,11 +52,12 @@ export function JobApplyForm({ onSubmit, onCancel, budgetType, defaultEmail = ''
   const handleSubmit = async (data: ApplicationFormData) => {
     try {
       setIsSubmitting(true);
-      console.log("Submitting application data:", data);
+      console.log("JobApplyForm - Submitting application data:", data);
       await onSubmit(data);
-      console.log("Application submitted successfully");
+      console.log("JobApplyForm - Application submitted successfully");
+      form.reset(); // Reset form after successful submission
     } catch (error) {
-      console.error("Error submitting application:", error);
+      console.error("JobApplyForm - Error submitting application:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -142,7 +143,7 @@ export function JobApplyForm({ onSubmit, onCancel, budgetType, defaultEmail = ''
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="Enter your email" {...field} defaultValue={defaultEmail} />
+                    <Input type="email" placeholder="Enter your email" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

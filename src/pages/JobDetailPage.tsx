@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -68,7 +67,7 @@ export default function JobDetailPage() {
     setSubmitting(true);
 
     try {
-      console.log("Applying with data:", {
+      const applicationData = {
         job_id: job.id,
         freelancer_id: user.id,
         cover_letter: data.cover_letter,
@@ -76,17 +75,11 @@ export default function JobDetailPage() {
         proposed_rate: data.proposed_rate,
         contact_phone: data.phone,
         contact_email: data.email
-      });
+      };
 
-      const application = await applyForJobWithPitch({
-        job_id: job.id,
-        freelancer_id: user.id,
-        cover_letter: data.cover_letter,
-        pitch: data.pitch,
-        proposed_rate: data.proposed_rate,
-        contact_phone: data.phone,
-        contact_email: data.email
-      });
+      console.log("Applying with data:", applicationData);
+
+      const application = await applyForJobWithPitch(applicationData);
 
       console.log("Application submission response:", application);
 
@@ -130,13 +123,11 @@ export default function JobDetailPage() {
     );
   }
 
-  // Get user type from user metadata
   const userType = user?.user_metadata?.user_type;
   const isFreelancer = userType === 'freelancer';
   const isJobOwner = job.client_id === user?.id;
-  // Only freelancers who don't own the job and haven't applied can apply
   const canApply = isFreelancer && !isJobOwner && !hasApplied && job.status === 'open';
-  
+
   console.log("Job detail page state:", { 
     userType, 
     isFreelancer, 

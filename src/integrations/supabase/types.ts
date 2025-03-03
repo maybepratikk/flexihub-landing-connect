@@ -209,6 +209,7 @@ export type Database = {
           freelancer_id: string | null
           id: string
           job_id: string | null
+          pitch: string | null
           proposed_rate: number | null
           status: string
           updated_at: string | null
@@ -221,6 +222,7 @@ export type Database = {
           freelancer_id?: string | null
           id?: string
           job_id?: string | null
+          pitch?: string | null
           proposed_rate?: number | null
           status?: string
           updated_at?: string | null
@@ -233,6 +235,7 @@ export type Database = {
           freelancer_id?: string | null
           id?: string
           job_id?: string | null
+          pitch?: string | null
           proposed_rate?: number | null
           status?: string
           updated_at?: string | null

@@ -28,8 +28,10 @@ export function JobSidebarContent({
       setIsSubmitting(true);
       console.log("JobSidebarContent - submitting form data:", data);
       await onSubmitApplication(data);
+      console.log("JobSidebarContent - form submitted successfully");
     } catch (error) {
       console.error("Error in JobSidebarContent submit:", error);
+      throw error; // Rethrow the error to be handled by the form
     } finally {
       setIsSubmitting(false);
     }

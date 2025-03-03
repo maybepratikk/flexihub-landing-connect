@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 // Get environment variables for Supabase connection
@@ -348,6 +349,25 @@ export async function applyForJobWithPitch(application: Omit<JobApplication, 'id
   console.log("Applying for job with data:", application);
   
   try {
+    // Validate required fields
+    if (!application.job_id) {
+      throw new Error('Job ID is required');
+    }
+    
+    if (!application.freelancer_id) {
+      throw new Error('Freelancer ID is required');
+    }
+    
+    if (!application.pitch) {
+      throw new Error('Pitch is required');
+    }
+
+    // Log the application data that will be inserted
+    console.log("Inserting application with data:", {
+      ...application,
+      status: 'pending'
+    });
+    
     const { data, error } = await supabase
       .from('job_applications')
       .insert({
