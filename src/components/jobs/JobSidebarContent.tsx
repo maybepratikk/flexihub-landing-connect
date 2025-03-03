@@ -3,6 +3,8 @@ import { JobApplyForm, ApplicationFormData } from './shared/JobApplyForm';
 import { Job } from '@/lib/supabase';
 import { ApplicationStatus } from './shared/ApplicationStatus';
 import { useState } from 'react';
+import { useToast } from '@/components/ui/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 interface JobSidebarContentProps {
   job: Job;
@@ -22,6 +24,7 @@ export function JobSidebarContent({
   userEmail
 }: JobSidebarContentProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async (data: ApplicationFormData) => {
     try {
@@ -29,8 +32,18 @@ export function JobSidebarContent({
       console.log("JobSidebarContent - submitting form data:", data);
       await onSubmitApplication(data);
       console.log("JobSidebarContent - form submitted successfully");
+      toast({
+        title: "Application Submitted",
+        description: "Your job application has been submitted successfully. You can track its status on your dashboard.",
+        variant: "default",
+      });
     } catch (error) {
       console.error("Error in JobSidebarContent submit:", error);
+      toast({
+        title: "Submission Failed",
+        description: "There was an error submitting your application. Please try again.",
+        variant: "destructive",
+      });
       throw error; // Rethrow the error to be handled by the form
     } finally {
       setIsSubmitting(false);
@@ -47,6 +60,7 @@ export function JobSidebarContent({
             onCancel={onCancelApplication}
             budgetType={job.budget_type as 'fixed' | 'hourly'}
             defaultEmail={userEmail || ''}
+            isSubmitting={isSubmitting}
           />
         </div>
       ) : (
@@ -84,12 +98,34 @@ export function JobSidebarContent({
               <h3 className="font-semibold">Experience</h3>
               <p className="capitalize">{job.experience_level || 'Any'}</p>
             </div>
+            <div>
+              <h3 className="font-semibold">Status</h3>
+              <Badge 
+                variant={
+                  job.status === 'open' ? 'default' : 
+                  job.status === 'in_progress' ? 'secondary' : 'outline'
+                }
+              >
+                {job.status === 'open' ? 'Open' : 
+                 job.status === 'in_progress' ? 'In Progress' : 'Completed'}
+              </Badge>
+            </div>
           </div>
           
           {hasApplied && (
             <div className="mt-4 p-4 border rounded-md bg-muted/50">
               <h3 className="text-sm font-semibold mb-2">Your Application</h3>
               <ApplicationStatus status={hasApplied.status || 'pending'} />
+              {hasApplied.status === 'accepted' && (
+                <p className="text-sm mt-2 text-green-600">
+                  Congratulations! Your application has been accepted. A contract has been created for this job.
+                </p>
+              )}
+              {hasApplied.status === 'rejected' && (
+                <p className="text-sm mt-2 text-muted-foreground">
+                  Your application was not selected for this opportunity. Continue exploring more jobs.
+                </p>
+              )}
             </div>
           )}
         </div>

@@ -34,23 +34,32 @@ export default function ApplicationsPage() {
 
     const fetchJobAndApplications = async () => {
       setLoading(true);
-      const jobData = await getJobById(jobId);
-      
-      if (jobData && jobData.client_id === user.id) {
-        setJob(jobData);
-        const applicationsData = await getJobApplications(jobId);
-        setApplications(applicationsData);
-      } else {
-        // If user is not the job owner, redirect
+      try {
+        const jobData = await getJobById(jobId);
+        
+        if (jobData && jobData.client_id === user.id) {
+          setJob(jobData);
+          const applicationsData = await getJobApplications(jobId);
+          setApplications(applicationsData);
+        } else {
+          // If user is not the job owner, redirect
+          toast({
+            title: "Access Denied",
+            description: "You don't have permission to view applications for this job.",
+            variant: "destructive",
+          });
+          navigate('/jobs');
+        }
+      } catch (error) {
+        console.error('Error fetching job and applications:', error);
         toast({
-          title: "Access Denied",
-          description: "You don't have permission to view applications for this job.",
+          title: "Error",
+          description: "Failed to load job applications. Please try again.",
           variant: "destructive",
         });
-        navigate('/jobs');
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
 
     fetchJobAndApplications();
@@ -88,6 +97,9 @@ export default function ApplicationsPage() {
             if (contract) {
               // Update job status to in_progress
               await updateJobStatus(job.id, 'in_progress');
+              
+              // Update local job status
+              setJob(prevJob => prevJob ? { ...prevJob, status: 'in_progress' } : null);
               
               toast({
                 title: "Application Accepted",

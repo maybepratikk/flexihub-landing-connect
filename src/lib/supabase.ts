@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 // Get environment variables for Supabase connection
@@ -81,6 +80,7 @@ export type JobApplication = {
   profiles?: {
     full_name?: string;
     avatar_url?: string;
+    id?: string;
   };
   // Add freelancer_profiles property to match what's returned from the database
   freelancer_profiles?: {
@@ -88,6 +88,13 @@ export type JobApplication = {
     skills?: string[];
     years_experience?: number;
     portfolio_links?: string[];
+  };
+  // Add jobs property for embedded job data
+  jobs?: {
+    title?: string;
+    budget_type?: string;
+    status?: string;
+    id?: string;
   };
 };
 
@@ -395,97 +402,133 @@ export async function applyForJobWithPitch(application: Omit<JobApplication, 'id
   }
 }
 
-// Function to get applications for a job
+// Enhanced function to get applications for a job with more detailed info
 export async function getJobApplications(jobId: string) {
-  const { data, error } = await supabase
-    .from('job_applications')
-    .select('*, profiles!inner(full_name, avatar_url), freelancer_profiles!inner(*)')
-    .eq('job_id', jobId);
-  
-  if (error) {
-    console.error('Error fetching job applications:', error);
+  try {
+    const { data, error } = await supabase
+      .from('job_applications')
+      .select('*, profiles!inner(id, full_name, avatar_url), freelancer_profiles!inner(*)')
+      .eq('job_id', jobId);
+    
+    if (error) {
+      console.error('Error fetching job applications:', error);
+      return [];
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Exception in getJobApplications:', error);
     return [];
   }
-  
-  return data;
 }
 
-// Function to get freelancer's applications
+// Enhanced function to get freelancer's applications with job details
 export async function getFreelancerApplications(freelancerId: string) {
-  const { data, error } = await supabase
-    .from('job_applications')
-    .select('*, jobs!inner(*)')
-    .eq('freelancer_id', freelancerId);
-  
-  if (error) {
-    console.error('Error fetching freelancer applications:', error);
+  try {
+    const { data, error } = await supabase
+      .from('job_applications')
+      .select('*, jobs!inner(*)')
+      .eq('freelancer_id', freelancerId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching freelancer applications:', error);
+      return [];
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Exception in getFreelancerApplications:', error);
     return [];
   }
-  
-  return data;
 }
 
-// Function to update application status
+// Enhanced function to update application status
 export async function updateApplicationStatus(applicationId: string, status: 'pending' | 'accepted' | 'rejected') {
-  const { data, error } = await supabase
-    .from('job_applications')
-    .update({ status })
-    .eq('id', applicationId)
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error updating application status:', error);
+  try {
+    const { data, error } = await supabase
+      .from('job_applications')
+      .update({ 
+        status,
+        updated_at: new Date().toISOString() // Update the timestamp
+      })
+      .eq('id', applicationId)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating application status:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Exception in updateApplicationStatus:', error);
     return null;
   }
-  
-  return data;
 }
 
-// Function to create a contract
+// Enhanced function to create a contract
 export async function createContract(contractData: Omit<Contract, 'id' | 'created_at' | 'updated_at'>) {
-  const { data, error } = await supabase
-    .from('contracts')
-    .insert(contractData)
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error creating contract:', error);
+  try {
+    const { data, error } = await supabase
+      .from('contracts')
+      .insert(contractData)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating contract:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Exception in createContract:', error);
     return null;
   }
-  
-  return data;
 }
 
-// Function to get contracts for a client
+// Enhanced function to get contracts for a client
 export async function getClientContracts(clientId: string) {
-  const { data, error } = await supabase
-    .from('contracts')
-    .select('*, jobs!inner(*), profiles!freelancer_id(id, full_name, avatar_url), profiles!client_id(id, full_name, avatar_url)')
-    .eq('client_id', clientId);
-  
-  if (error) {
-    console.error('Error fetching client contracts:', error);
+  try {
+    const { data, error } = await supabase
+      .from('contracts')
+      .select('*, jobs!inner(*), profiles!inner(id, full_name, avatar_url)')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching client contracts:', error);
+      return [];
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Exception in getClientContracts:', error);
     return [];
   }
-  
-  return data;
 }
 
-// Function to get contracts for a freelancer
+// Enhanced function to get contracts for a freelancer
 export async function getFreelancerContracts(freelancerId: string) {
-  const { data, error } = await supabase
-    .from('contracts')
-    .select('*, jobs!inner(*), profiles!client_id(id, full_name, avatar_url)')
-    .eq('freelancer_id', freelancerId);
-  
-  if (error) {
-    console.error('Error fetching freelancer contracts:', error);
+  try {
+    const { data, error } = await supabase
+      .from('contracts')
+      .select('*, jobs!inner(*), profiles!inner(id, full_name, avatar_url)')
+      .eq('freelancer_id', freelancerId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching freelancer contracts:', error);
+      return [];
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Exception in getFreelancerContracts:', error);
     return [];
   }
-  
-  return data;
 }
 
 // Function to get a specific application
@@ -590,12 +633,15 @@ export async function hasAppliedToJob(jobId: string, freelancerId: string) {
   return data;
 }
 
-// Function to update a job's status
+// Enhanced function to update a job's status
 export async function updateJobStatus(jobId: string, status: 'open' | 'in_progress' | 'completed' | 'cancelled') {
   try {
     const { data, error } = await supabase
       .from('jobs')
-      .update({ status })
+      .update({ 
+        status,
+        updated_at: new Date().toISOString() // Update the timestamp
+      })
       .eq('id', jobId)
       .select()
       .single();
