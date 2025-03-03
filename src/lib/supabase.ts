@@ -200,7 +200,7 @@ export async function getJobs(filters?: {
 }) {
   let query = supabase
     .from('jobs')
-    .select('*, profiles!inner(full_name, avatar_url)')
+    .select('*, profiles(*)')
     .eq('status', 'open')
     .order('created_at', { ascending: false });
   

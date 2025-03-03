@@ -60,6 +60,7 @@ const HomePage = () => {
         }
         
         const jobsData = await getJobs(filters);
+        console.log('Fetched jobs:', jobsData);
         setJobs(jobsData);
       } catch (error) {
         console.error('Error loading jobs:', error);
@@ -217,7 +218,7 @@ const HomePage = () => {
                             </Link>
                           </CardTitle>
                           <CardDescription>
-                            Posted by {job.profiles.full_name} • {job.created_at ? formatDistanceToNow(new Date(job.created_at), { addSuffix: true }) : ''}
+                            Posted by {job.profiles?.full_name || 'Anonymous'} • {job.created_at ? formatDistanceToNow(new Date(job.created_at), { addSuffix: true }) : ''}
                           </CardDescription>
                         </div>
                         <Badge variant={job.budget_type === 'fixed' ? 'secondary' : 'outline'}>

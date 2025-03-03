@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -175,7 +174,7 @@ export function FreelancerDashboard() {
                             <Badge 
                               variant={
                                 application.status === 'pending' ? 'secondary' : 
-                                application.status === 'accepted' ? 'success' : 'destructive'
+                                application.status === 'accepted' ? 'outline' : 'destructive'
                               }
                             >
                               {application.status}
@@ -225,8 +224,8 @@ export function FreelancerDashboard() {
                           <div className="mt-2">
                             <Badge 
                               variant={
-                                contract.status === 'active' ? 'success' : 
-                                contract.status === 'completed' ? 'secondary' : 'destructive'
+                                contract.status === 'active' ? 'secondary' : 
+                                contract.status === 'completed' ? 'outline' : 'destructive'
                               }
                             >
                               {contract.status}
