@@ -4,20 +4,87 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { NavigateFunction } from 'react-router-dom';
+import { updateApplicationStatus, createContract, updateJobStatus } from '@/lib/supabase';
+import { useToast } from '@/components/ui/use-toast';
 
 interface JobApplicationsListProps {
   jobId: string;
   applications: any[];
   navigate: NavigateFunction;
   onUpdateStatus?: (jobId: string, applicationId: string, status: 'accepted' | 'rejected') => void;
+  onApplicationsUpdated?: () => void;
 }
 
 export function JobApplicationsList({ 
   jobId, 
   applications, 
   navigate, 
-  onUpdateStatus 
+  onUpdateStatus,
+  onApplicationsUpdated
 }: JobApplicationsListProps) {
+  const { toast } = useToast();
+
+  const handleUpdateStatus = async (jobId: string, applicationId: string, status: 'accepted' | 'rejected', applicantId: string, rate: number) => {
+    try {
+      // First update the application status
+      const updatedApplication = await updateApplicationStatus(applicationId, status);
+      
+      if (!updatedApplication) {
+        throw new Error('Failed to update application status');
+      }
+
+      // If the application was accepted, create a contract and update job status
+      if (status === 'accepted') {
+        const contractData = {
+          job_id: jobId,
+          freelancer_id: applicantId,
+          client_id: updatedApplication.jobs?.client_id || '',
+          rate: rate,
+          status: 'active',
+          start_date: new Date().toISOString()
+        };
+        
+        const newContract = await createContract(contractData);
+        
+        if (!newContract) {
+          throw new Error('Failed to create contract');
+        }
+        
+        // Update job status to in_progress
+        await updateJobStatus(jobId, 'in_progress');
+        
+        toast({
+          title: "Application accepted",
+          description: "A contract has been created with this freelancer.",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Application rejected",
+          description: "The freelancer will be notified.",
+          variant: "default",
+        });
+      }
+      
+      // Call the parent's update callback if provided
+      if (onUpdateStatus) {
+        onUpdateStatus(jobId, applicationId, status);
+      }
+      
+      // Trigger refresh of applications list
+      if (onApplicationsUpdated) {
+        onApplicationsUpdated();
+      }
+    } catch (error) {
+      console.error('Error updating application status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update application status. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="border-t bg-muted/30 p-4">
       <h4 className="font-medium mb-3">Applications ({applications.length})</h4>
@@ -44,19 +111,31 @@ export function JobApplicationsList({
                   </div>
                 </div>
                 
-                {application.status === 'pending' && onUpdateStatus ? (
+                {application.status === 'pending' ? (
                   <div className="flex gap-2">
                     <Button 
                       size="sm" 
                       variant="outline" 
                       className="text-destructive"
-                      onClick={() => onUpdateStatus(jobId, application.id, 'rejected')}
+                      onClick={() => handleUpdateStatus(
+                        jobId, 
+                        application.id, 
+                        'rejected',
+                        application.freelancer_id,
+                        application.proposed_rate
+                      )}
                     >
                       <XCircle className="h-4 w-4 mr-1" /> Reject
                     </Button>
                     <Button 
                       size="sm"
-                      onClick={() => onUpdateStatus(jobId, application.id, 'accepted')}
+                      onClick={() => handleUpdateStatus(
+                        jobId, 
+                        application.id, 
+                        'accepted',
+                        application.freelancer_id,
+                        application.proposed_rate
+                      )}
                     >
                       <CheckCircle className="h-4 w-4 mr-1" /> Accept
                     </Button>

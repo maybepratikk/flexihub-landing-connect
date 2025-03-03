@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserProfile, supabase } from '@/lib/supabase';
@@ -13,47 +13,47 @@ const DashboardPage = () => {
   const [profile, setProfile] = useState<any>(null);
   const [detailedProfile, setDetailedProfile] = useState<any>(null);
 
-  useEffect(() => {
-    const loadProfileData = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+  const loadProfileData = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
-      try {
-        // Get basic profile info
-        const basicProfile = await getUserProfile(user.id);
-        setProfile(basicProfile);
-        
-        if (basicProfile) {
-          // Get detailed profile based on user type
-          if (basicProfile.user_type === 'freelancer') {
-            const { data } = await supabase
-              .from('freelancer_profiles')
-              .select('*')
-              .eq('id', user.id)
-              .single();
-              
-            setDetailedProfile(data);
-          } else if (basicProfile.user_type === 'client') {
-            const { data } = await supabase
-              .from('client_profiles')
-              .select('*')
-              .eq('id', user.id)
-              .single();
-              
-            setDetailedProfile(data);
-          }
+    try {
+      // Get basic profile info
+      const basicProfile = await getUserProfile(user.id);
+      setProfile(basicProfile);
+      
+      if (basicProfile) {
+        // Get detailed profile based on user type
+        if (basicProfile.user_type === 'freelancer') {
+          const { data } = await supabase
+            .from('freelancer_profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+            
+          setDetailedProfile(data);
+        } else if (basicProfile.user_type === 'client') {
+          const { data } = await supabase
+            .from('client_profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+            
+          setDetailedProfile(data);
         }
-      } catch (error) {
-        console.error('Error loading profile data:', error);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    loadProfileData();
+    } catch (error) {
+      console.error('Error loading profile data:', error);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    loadProfileData();
+  }, [loadProfileData]);
 
   // If not logged in, redirect to sign in
   if (!loading && !user) {
@@ -77,7 +77,7 @@ const DashboardPage = () => {
             {profile?.user_type === 'freelancer' ? (
               <FreelancerDashboard />
             ) : profile?.user_type === 'client' ? (
-              <ClientDashboard />
+              <ClientDashboard onRefresh={loadProfileData} />
             ) : (
               <div className="text-center">
                 <h2 className="text-xl font-semibold">User type not found</h2>

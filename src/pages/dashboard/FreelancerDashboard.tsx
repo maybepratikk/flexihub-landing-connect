@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -126,6 +125,7 @@ export function FreelancerDashboard() {
         </div>
       )}
       
+      {/* Stats cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -176,6 +176,7 @@ export function FreelancerDashboard() {
         </Card>
       </div>
       
+      {/* Profile overview */}
       <Card>
         <CardHeader>
           <CardTitle>Profile Overview</CardTitle>
@@ -196,6 +197,7 @@ export function FreelancerDashboard() {
         </CardFooter>
       </Card>
       
+      {/* Applications and Contracts tabs */}
       <Tabs defaultValue="applications">
         <TabsList className="mb-4">
           <TabsTrigger value="applications">My Applications</TabsTrigger>

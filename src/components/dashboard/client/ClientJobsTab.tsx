@@ -1,37 +1,55 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { JobsList } from './JobsList';
+import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { NavigateFunction } from 'react-router-dom';
 
 interface ClientJobsTabProps {
   jobs: any[];
-  loadJobApplications: (jobId: string) => void;
-  loadingApplications: Record<string, boolean>;
-  jobApplications: Record<string, any[]>;
-  handleStatusUpdate: (jobId: string, applicationId: string, status: 'accepted' | 'rejected') => void;
+  navigate: NavigateFunction;
+  loading: boolean;
+  onUpdateApplicationStatus?: (jobId: string, applicationId: string, status: 'accepted' | 'rejected') => void;
+  onJobsUpdated?: () => void;
 }
 
 export function ClientJobsTab({ 
   jobs, 
-  loadJobApplications, 
-  loadingApplications, 
-  jobApplications,
-  handleStatusUpdate
+  navigate, 
+  loading, 
+  onUpdateApplicationStatus,
+  onJobsUpdated
 }: ClientJobsTabProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Your Job Postings</CardTitle>
-        <CardDescription>
-          Manage your active and past job postings
-        </CardDescription>
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle>Your Jobs</CardTitle>
+            <CardDescription>
+              Jobs you've posted
+            </CardDescription>
+          </div>
+          <Button onClick={() => navigate('/post-job')}>
+            <Plus className="mr-2 h-4 w-4" /> Post Job
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
-        <JobsList 
-          jobs={jobs} 
-          loadJobApplications={loadJobApplications} 
-          loadingApplications={loadingApplications} 
-          jobApplications={jobApplications}
-        />
+        {loading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        ) : (
+          <JobsList 
+            jobs={jobs} 
+            navigate={navigate} 
+            onUpdateApplicationStatus={onUpdateApplicationStatus}
+            onJobsUpdated={onJobsUpdated}
+          />
+        )}
       </CardContent>
     </Card>
   );
