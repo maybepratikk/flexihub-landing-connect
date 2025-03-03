@@ -12,6 +12,8 @@ import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 import VerificationSentPage from "./pages/VerificationSentPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import OnboardingPage from "./pages/OnboardingPage";
+import DashboardPage from "./pages/DashboardPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,10 @@ const App = () => (
             <Route path="/signup" element={<SignUpPage />} />
             <Route path="/verification-sent" element={<VerificationSentPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            
+            {/* Protected Routes */}
+            <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
             
             {/* Redirect index to the landing page */}
             <Route path="/index" element={<Navigate to="/" replace />} />
