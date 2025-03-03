@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, SubmitHandler } from 'react-hook-form';
@@ -12,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { toast } from "@/components/ui/use-toast"
-import { createJob } from '@/lib/supabase';
+import { createJob, Job } from '@/lib/supabase';
 
 const formSchema = z.object({
   title: z.string().min(3, {
@@ -42,8 +43,8 @@ const formSchema = z.object({
   budgetType: z.enum(['fixed', 'hourly'], {
     required_error: "Please select a budget type.",
   }),
-  duration: z.string().optional(),
-  experienceLevel: z.string().optional(),
+  duration: z.enum(['short', 'medium', 'long']).optional(),
+  experienceLevel: z.enum(['entry', 'intermediate', 'expert']).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -63,8 +64,8 @@ const PostJobPage = () => {
       budgetMin: "",
       budgetMax: "",
       budgetType: 'fixed',
-      duration: '',
-      experienceLevel: '',
+      duration: undefined,
+      experienceLevel: undefined,
     },
   });
   
@@ -77,7 +78,7 @@ const PostJobPage = () => {
       // Format the skills as an array
       const skillsArray = values.skills.split(',').map(skill => skill.trim());
       
-      // Create the job object
+      // Create the job object with proper typing
       const jobData = {
         client_id: user.id,
         title: values.title,
@@ -87,10 +88,12 @@ const PostJobPage = () => {
         budget_min: Number(values.budgetMin),
         budget_max: Number(values.budgetMax),
         budget_type: values.budgetType as 'fixed' | 'hourly',
-        duration: values.duration,
-        experience_level: values.experienceLevel,
-        status: 'open'
+        duration: values.duration || null, // Set to null if not provided
+        experience_level: values.experienceLevel || null, // Set to null if not provided
+        status: 'open' as const
       };
+      
+      console.log("Creating job with data:", jobData);
       
       // Create the job in the database
       const job = await createJob(jobData);

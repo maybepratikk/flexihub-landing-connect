@@ -177,6 +177,8 @@ export async function updateClientProfile(userId: string, updates: Partial<Clien
 
 // Function to create a new job
 export async function createJob(jobData: Omit<Job, 'id' | 'created_at' | 'updated_at'>) {
+  console.log("Creating job with data in supabase:", jobData);
+  
   const { data, error } = await supabase
     .from('jobs')
     .insert(jobData)
