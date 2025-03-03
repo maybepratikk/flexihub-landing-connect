@@ -1,10 +1,13 @@
+
+/* Reset some default styles that might be causing issues */
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: left;
 }
 
+/* Keep other styles but adjust them for better compatibility */
 .logo {
   height: 6em;
   padding: 1.5em;
