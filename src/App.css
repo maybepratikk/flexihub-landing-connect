@@ -5,6 +5,9 @@
   margin: 0;
   padding: 0;
   text-align: left;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Keep other styles but adjust them for better compatibility */
