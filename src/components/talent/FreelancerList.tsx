@@ -55,10 +55,12 @@ export function FreelancerList({ filters }: FreelancerListProps) {
 
   if (freelancers.length === 0) {
     return (
-      <FreelancerEmptyState 
-        title="No freelancers found" 
-        description="Try adjusting your filters or search criteria" 
-      />
+      <div className="flex flex-col items-center justify-center py-12">
+        <h3 className="text-xl font-semibold mb-2">No freelancers found</h3>
+        <p className="text-muted-foreground text-center">
+          Try adjusting your filters or search criteria
+        </p>
+      </div>
     );
   }
 
@@ -73,10 +75,14 @@ export function FreelancerList({ filters }: FreelancerListProps) {
             ))}
           </div>
         ) : (
-          <FreelancerEmptyState 
-            title={`No ${filters.experience} level freelancers found`} 
-            description="Try adjusting your filters" 
-          />
+          <div className="flex flex-col items-center justify-center py-12">
+            <h3 className="text-xl font-semibold mb-2">
+              No {filters.experience} level freelancers found
+            </h3>
+            <p className="text-muted-foreground text-center">
+              Try adjusting your filters
+            </p>
+          </div>
         )}
       </div>
     );
