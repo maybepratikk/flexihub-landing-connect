@@ -1,7 +1,7 @@
 
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { AuthContext } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   getJobById, 
   applyForJobWithPitch, 
@@ -39,7 +39,7 @@ type ApplicationFormData = z.infer<typeof applicationSchema>;
 
 export default function JobDetailPage() {
   const { jobId } = useParams<{ jobId: string }>();
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
