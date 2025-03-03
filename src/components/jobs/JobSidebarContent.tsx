@@ -1,4 +1,3 @@
-
 import { JobApplyForm, ApplicationFormData } from './shared/JobApplyForm';
 import { Job } from '@/lib/supabase';
 import { ApplicationStatus } from './shared/ApplicationStatus';

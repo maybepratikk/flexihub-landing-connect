@@ -33,10 +33,19 @@ interface JobApplyFormProps {
   onCancel: () => void;
   budgetType: 'fixed' | 'hourly';
   defaultEmail?: string;
+  isSubmitting?: boolean;
 }
 
-export function JobApplyForm({ onSubmit, onCancel, budgetType, defaultEmail = '' }: JobApplyFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export function JobApplyForm({ 
+  onSubmit, 
+  onCancel, 
+  budgetType, 
+  defaultEmail = '',
+  isSubmitting = false
+}: JobApplyFormProps) {
+  const [localSubmitting, setLocalSubmitting] = useState(false);
+  // Use either the prop or local state to track submission state
+  const submitting = isSubmitting || localSubmitting;
   
   const form = useForm<ApplicationFormData>({
     resolver: zodResolver(applicationSchema),
@@ -51,7 +60,11 @@ export function JobApplyForm({ onSubmit, onCancel, budgetType, defaultEmail = ''
 
   const handleSubmit = async (data: ApplicationFormData) => {
     try {
-      setIsSubmitting(true);
+      if (!isSubmitting) {
+        // Only update local state if not controlled externally
+        setLocalSubmitting(true);
+      }
+      
       console.log("JobApplyForm - Submitting application data:", data);
       await onSubmit(data);
       console.log("JobApplyForm - Application submitted successfully");
@@ -59,7 +72,10 @@ export function JobApplyForm({ onSubmit, onCancel, budgetType, defaultEmail = ''
     } catch (error) {
       console.error("JobApplyForm - Error submitting application:", error);
     } finally {
-      setIsSubmitting(false);
+      if (!isSubmitting) {
+        // Only update local state if not controlled externally
+        setLocalSubmitting(false);
+      }
     }
   };
 
@@ -156,11 +172,11 @@ export function JobApplyForm({ onSubmit, onCancel, budgetType, defaultEmail = ''
         </div>
         
         <div className="flex justify-end space-x-2 pt-4">
-          <Button variant="outline" type="button" onClick={onCancel} disabled={isSubmitting}>
+          <Button variant="outline" type="button" onClick={onCancel} disabled={submitting}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Submit Application"}
+          <Button type="submit" disabled={submitting}>
+            {submitting ? "Submitting..." : "Submit Application"}
           </Button>
         </div>
       </form>
