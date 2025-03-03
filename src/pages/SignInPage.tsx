@@ -7,8 +7,8 @@ const SignInPage = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-grow pt-20">
-        <section className="py-8 md:py-16">
+      <main className="flex-grow pt-16">
+        <section className="py-16 md:py-24">
           <div className="container mx-auto px-4">
             <div className="max-w-md mx-auto">
               <SignInForm />

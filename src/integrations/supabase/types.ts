@@ -9,48 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      chat_messages: {
-        Row: {
-          contract_id: string | null
-          created_at: string | null
-          id: string
-          message: string
-          read: boolean | null
-          sender_id: string | null
-        }
-        Insert: {
-          contract_id?: string | null
-          created_at?: string | null
-          id?: string
-          message: string
-          read?: boolean | null
-          sender_id?: string | null
-        }
-        Update: {
-          contract_id?: string | null
-          created_at?: string | null
-          id?: string
-          message?: string
-          read?: boolean | null
-          sender_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "chat_messages_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "contracts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chat_messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       client_profiles: {
         Row: {
           company_description: string | null

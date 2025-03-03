@@ -1,236 +1,281 @@
 
-import { useState, useEffect, useContext } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { AuthContext } from '@/contexts/AuthContext';
-import { getJobs, Job } from '@/lib/supabase';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { JobCard } from '@/components/jobs/JobCard';
-import { Input } from '@/components/ui/input';
+import { JobSidebar } from '@/components/jobs/JobSidebar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, Briefcase } from 'lucide-react';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getJobs, Job } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
+import { Search, Plus, Filter, Briefcase, Loader2 } from 'lucide-react';
 
-export default function JobsPage() {
-  const { user } = useContext(AuthContext);
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [filters, setFilters] = useState({
-    category: '',
-    experience: '',
-  });
+const categories = [
+  { value: 'web_development', label: 'Web Development' },
+  { value: 'mobile_development', label: 'Mobile Development' },
+  { value: 'ui_ux_design', label: 'UI/UX Design' },
+  { value: 'graphic_design', label: 'Graphic Design' },
+  { value: 'content_writing', label: 'Content Writing' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'data_science', label: 'Data Science' },
+  { value: 'other', label: 'Other' }
+];
+
+const experienceLevels = [
+  { value: 'entry', label: 'Entry Level' },
+  { value: 'intermediate', label: 'Intermediate' },
+  { value: 'expert', label: 'Expert' }
+];
+
+export function JobsPage() {
+  const { user } = useAuth();
   const navigate = useNavigate();
-
+  const { toast } = useToast();
+  
+  const [loading, setLoading] = useState(true);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [levelFilter, setLevelFilter] = useState<string>('');
+  const [showFilters, setShowFilters] = useState(false);
+  
   useEffect(() => {
-    if (!user) return;
-
-    // Check for URL search params
-    const categoryParam = searchParams.get('category') || '';
-    const experienceParam = searchParams.get('experience') || '';
-    const searchParam = searchParams.get('search') || '';
-
-    if (categoryParam || experienceParam || searchParam) {
-      setFilters({
-        category: categoryParam,
-        experience: experienceParam,
+    loadJobs();
+  }, [categoryFilter, levelFilter]);
+  
+  const loadJobs = async () => {
+    setLoading(true);
+    try {
+      const filters: any = {};
+      
+      if (categoryFilter) {
+        filters.category = categoryFilter;
+      }
+      
+      if (levelFilter) {
+        filters.experience_level = levelFilter;
+      }
+      
+      if (searchQuery.trim()) {
+        filters.search = searchQuery.trim();
+      }
+      
+      console.log("Fetching jobs with filters:", filters);
+      const jobsData = await getJobs(filters);
+      console.log("Jobs fetched:", jobsData);
+      setJobs(jobsData);
+    } catch (error) {
+      console.error('Error loading jobs:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load jobs',
+        variant: 'destructive'
       });
-      setSearchQuery(searchParam);
-    }
-
-    const fetchJobs = async () => {
-      setLoading(true);
-      // Only pass filters if they have values
-      const filterParams: any = {};
-      if (categoryParam) filterParams.category = categoryParam;
-      if (experienceParam) filterParams.experience_level = experienceParam;
-      if (searchParam) filterParams.search = searchParam;
-
-      const fetchedJobs = await getJobs(Object.keys(filterParams).length > 0 ? filterParams : undefined);
-      setJobs(fetchedJobs);
-      setFilteredJobs(fetchedJobs);
+    } finally {
       setLoading(false);
-    };
-
-    fetchJobs();
-  }, [user, searchParams]);
-
-  useEffect(() => {
-    // Apply client-side filtering when searchQuery changes
-    if (searchQuery.trim() === '') {
-      setFilteredJobs(jobs);
-    } else {
-      const lowercaseQuery = searchQuery.toLowerCase();
-      const filtered = jobs.filter(
-        job =>
-          job.title.toLowerCase().includes(lowercaseQuery) ||
-          job.description.toLowerCase().includes(lowercaseQuery) ||
-          job.skills_required.some(skill => skill.toLowerCase().includes(lowercaseQuery))
-      );
-      setFilteredJobs(filtered);
     }
-  }, [searchQuery, jobs]);
-
-  const handleSearch = () => {
-    const newParams = new URLSearchParams(searchParams);
-    if (searchQuery) {
-      newParams.set('search', searchQuery);
-    } else {
-      newParams.delete('search');
-    }
-    setSearchParams(newParams);
   };
-
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-    
-    const newParams = new URLSearchParams(searchParams);
-    if (value) {
-      newParams.set(key, value);
-    } else {
-      newParams.delete(key);
-    }
-    setSearchParams(newParams);
+  
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    loadJobs();
   };
-
+  
+  const handleJobClick = (job: Job) => {
+    setSelectedJob(job);
+    setSidebarOpen(true);
+  };
+  
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
+  
   const clearFilters = () => {
-    setFilters({ category: '', experience: '' });
+    setCategoryFilter('');
+    setLevelFilter('');
     setSearchQuery('');
-    setSearchParams({});
+    loadJobs();
   };
-
-  const handleJobCardClick = (job: Job) => {
-    navigate(`/jobs/${job.id}`);
-  };
-
-  // Categories for filter dropdown
-  const categories = [
-    'Web Development',
-    'Mobile Development',
-    'Design',
-    'Writing',
-    'Marketing',
-    'Admin Support',
-    'Customer Service',
-    'Sales',
-    'Accounting',
-    'Legal',
-    'Other'
-  ];
-
-  // Experience levels for filter dropdown
-  const experienceLevels = [
-    { value: 'entry', label: 'Entry Level' },
-    { value: 'intermediate', label: 'Intermediate' },
-    { value: 'expert', label: 'Expert' }
-  ];
-
+  
+  const isClient = user && user.user_metadata?.user_type === 'client';
+  
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-2">Find Jobs</h1>
-      <p className="text-muted-foreground mb-8">
-        Browse through available jobs and find your next opportunity
-      </p>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="md:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Filters</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select 
-                  value={filters.category} 
-                  onValueChange={(value) => handleFilterChange('category', value)}
-                >
-                  <SelectTrigger id="category">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All Categories</SelectItem>
-                    {categories.map(category => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="experience">Experience Level</Label>
-                <Select 
-                  value={filters.experience} 
-                  onValueChange={(value) => handleFilterChange('experience', value)}
-                >
-                  <SelectTrigger id="experience">
-                    <SelectValue placeholder="Select level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All Levels</SelectItem>
-                    {experienceLevels.map(level => (
-                      <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Separator className="my-4" />
-
-              <Button 
-                variant="outline" 
-                onClick={clearFilters}
-                className="w-full"
-              >
-                Clear Filters
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="md:col-span-3">
-          <div className="mb-6 flex gap-2">
-            <div className="relative flex-grow">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search jobs by title, description, or skills..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="pl-10"
-              />
-            </div>
-            <Button onClick={handleSearch}>Search</Button>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+      <main className="container mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Find Jobs</h1>
+            <p className="text-muted-foreground">
+              Browse available opportunities that match your skills
+            </p>
           </div>
-
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-            </div>
-          ) : filteredJobs.length === 0 ? (
-            <div className="text-center py-16 space-y-4">
-              <Briefcase className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h2 className="text-xl font-semibold">No jobs found</h2>
-              <p className="text-muted-foreground">
-                Try adjusting your search or filters to find what you're looking for.
-              </p>
-              <Button variant="outline" onClick={clearFilters}>
-                Clear Filters
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-6">
-              {filteredJobs.map(job => (
-                <JobCard key={job.id} job={job} onClick={handleJobCardClick} />
-              ))}
-            </div>
+          
+          {isClient && (
+            <Button onClick={() => navigate('/post-job')}>
+              <Plus className="mr-2 h-4 w-4" /> Post a New Job
+            </Button>
           )}
         </div>
-      </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+          <div className="lg:col-span-3">
+            <form onSubmit={handleSearch} className="flex gap-2 mb-4">
+              <Input
+                placeholder="Search jobs..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1"
+              />
+              <Button type="submit">
+                <Search className="h-4 w-4" />
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className="h-4 w-4" />
+              </Button>
+            </form>
+            
+            {showFilters && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-muted/30 rounded-lg">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">
+                    Category
+                  </label>
+                  <Select 
+                    value={categoryFilter} 
+                    onValueChange={setCategoryFilter}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Categories</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category.value} value={category.value}>
+                          {category.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-1 block">
+                    Experience Level
+                  </label>
+                  <Select 
+                    value={levelFilter} 
+                    onValueChange={setLevelFilter}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Levels" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Levels</SelectItem>
+                      {experienceLevels.map((level) => (
+                        <SelectItem key={level.value} value={level.value}>
+                          {level.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-end">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={clearFilters}
+                    className="w-full"
+                  >
+                    Clear Filters
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : jobs.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-64 text-center">
+                <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">No jobs found</h3>
+                <p className="text-muted-foreground">
+                  Try adjusting your search or filters to find more opportunities
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {jobs.map((job) => (
+                  <JobCard 
+                    key={job.id} 
+                    job={job} 
+                    onClick={handleJobClick}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <div className="hidden lg:block">
+            <div className="sticky top-6">
+              <div className="bg-card p-4 rounded-lg border shadow-sm">
+                <h3 className="text-lg font-semibold mb-2">Popular Categories</h3>
+                <div className="flex flex-wrap gap-2">
+                  {categories.slice(0, 6).map((category) => (
+                    <Badge
+                      key={category.value}
+                      variant={categoryFilter === category.value ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() => setCategoryFilter(
+                        categoryFilter === category.value ? '' : category.value
+                      )}
+                    >
+                      {category.label}
+                    </Badge>
+                  ))}
+                </div>
+                
+                <Separator className="my-4" />
+                
+                <h3 className="text-lg font-semibold mb-2">Experience Level</h3>
+                <div className="flex flex-wrap gap-2">
+                  {experienceLevels.map((level) => (
+                    <Badge
+                      key={level.value}
+                      variant={levelFilter === level.value ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() => setLevelFilter(
+                        levelFilter === level.value ? '' : level.value
+                      )}
+                    >
+                      {level.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+      
+      <JobSidebar
+        job={selectedJob}
+        isOpen={sidebarOpen}
+        onClose={closeSidebar}
+      />
     </div>
   );
 }
