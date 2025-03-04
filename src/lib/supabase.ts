@@ -442,8 +442,7 @@ export const getFreelancerApplications = async (userId: string) => {
       .from('job_applications')
       .select(`
         *,
-        jobs!job_applications_job_id_fkey(*),
-        profiles!job_applications_freelancer_id_fkey(*)
+        jobs:job_id(id, title, budget_type, status)
       `)
       .eq('freelancer_id', userId)
       .order('updated_at', { ascending: false });

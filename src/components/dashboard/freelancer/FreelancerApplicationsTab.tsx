@@ -14,6 +14,9 @@ interface ApplicationsTabProps {
 export function FreelancerApplicationsTab({ applications, contracts }: ApplicationsTabProps) {
   const navigate = useNavigate();
   
+  // Debug log to inspect applications data structure
+  console.log("Applications in FreelancerApplicationsTab:", applications);
+  
   return (
     <Card>
       <CardHeader>
@@ -34,15 +37,11 @@ export function FreelancerApplicationsTab({ applications, contracts }: Applicati
         ) : (
           <div className="space-y-4">
             {applications.map((application) => {
-              // Get job title safely, checking all possible paths
-              const jobTitle = application.jobs?.title || 
-                               (application.job && application.job.title) ||
-                               'Unnamed Job';
+              // Get the job title by checking all possible data structures
+              const jobTitle = application.jobs?.title || 'Unnamed Job';
               
               // Get job budget type safely
-              const budgetType = application.jobs?.budget_type || 
-                                (application.job && application.job.budget_type) || 
-                                'hourly';
+              const budgetType = application.jobs?.budget_type || 'hourly';
               
               // Find the corresponding contract
               const contract = contracts.find(c => c.job_id === application.job_id);
