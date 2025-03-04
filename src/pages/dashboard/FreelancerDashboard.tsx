@@ -1,9 +1,9 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getFreelancerProfile, getFreelancerApplications, getFreelancerContracts } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
-import { Mail } from 'lucide-react';
 import {
   FreelancerDashboardHeader,
   FreelancerStatusNotifications,
