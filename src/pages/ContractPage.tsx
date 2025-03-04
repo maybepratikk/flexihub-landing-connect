@@ -28,21 +28,46 @@ export default function ContractPage() {
 
     const fetchContract = async () => {
       setLoading(true);
-      const fetchedContract = await getContractById(contractId);
-      
-      if (fetchedContract && (fetchedContract.client_id === user.id || fetchedContract.freelancer_id === user.id)) {
-        setContract(fetchedContract);
-      } else {
-        // Redirect if not authorized
-        navigate('/dashboard');
+      try {
+        const fetchedContract = await getContractById(contractId);
+        
+        if (fetchedContract) {
+          // Check if user is either the client or freelancer of this contract
+          const isAuthorized = 
+            fetchedContract.client_id === user.id || 
+            fetchedContract.freelancer_id === user.id;
+            
+          if (isAuthorized) {
+            console.log('Contract data:', fetchedContract);
+            setContract(fetchedContract);
+          } else {
+            // Redirect if not authorized
+            navigate('/dashboard');
+            toast({
+              title: "Access Denied",
+              description: "You don't have permission to view this contract.",
+              variant: "destructive",
+            });
+          }
+        } else {
+          // Contract not found
+          navigate('/dashboard');
+          toast({
+            title: "Not Found",
+            description: "The requested contract could not be found.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching contract:', error);
         toast({
-          title: "Access Denied",
-          description: "You don't have permission to view this contract.",
+          title: "Error",
+          description: "There was a problem loading the contract details.",
           variant: "destructive",
         });
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
 
     fetchContract();
@@ -66,7 +91,18 @@ export default function ContractPage() {
   }
 
   const isClient = user?.id === contract.client_id;
-  const otherParty = isClient ? contract.profiles?.freelancer_id : contract.profiles?.client_id;
+  
+  // Get the correct other party data
+  const otherPartyId = isClient ? contract.freelancer_id : contract.client_id;
+  let otherParty = null;
+  
+  if (isClient && contract.profiles) {
+    // When viewing as client, get freelancer info
+    otherParty = contract.profiles;
+  } else if (!isClient && contract.profiles) {
+    // When viewing as freelancer, get client info
+    otherParty = contract.profiles;
+  }
 
   return (
     <div className="container mx-auto py-10">
@@ -120,17 +156,19 @@ export default function ContractPage() {
                 <h3 className="text-sm font-semibold mb-1">Job</h3>
                 {contract.jobs && (
                   <div className="mt-2">
-                    <h4 className="font-medium">{contract.jobs.title}</h4>
+                    <h4 className="font-medium">{contract.jobs.title || 'Unnamed Job'}</h4>
                     <p className="text-sm text-muted-foreground truncate">
                       {contract.jobs.description && contract.jobs.description.substring(0, 100)}...
                     </p>
-                    <Button 
-                      variant="link" 
-                      className="p-0 h-auto mt-1"
-                      onClick={() => navigate(`/jobs/${contract.jobs?.id}`)}
-                    >
-                      View Job Details
-                    </Button>
+                    {contract.jobs.id && (
+                      <Button 
+                        variant="link" 
+                        className="p-0 h-auto mt-1"
+                        onClick={() => navigate(`/jobs/${contract.jobs?.id}`)}
+                      >
+                        View Job Details
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -148,7 +186,7 @@ export default function ContractPage() {
                       <AvatarFallback>{otherParty.full_name?.charAt(0) || 'U'}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium">{otherParty.full_name}</p>
+                      <p className="font-medium">{otherParty.full_name || 'Unknown User'}</p>
                     </div>
                   </div>
                 )}

@@ -1,7 +1,7 @@
 
-import { NavigateFunction } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ContractsList } from './ContractsList';
+import { useNavigate } from 'react-router-dom';
 
 interface ClientContractsTabProps {
   contracts: any[];
@@ -9,8 +9,10 @@ interface ClientContractsTabProps {
 }
 
 export function ClientContractsTab({ contracts, loading }: ClientContractsTabProps) {
+  const navigate = useNavigate();
+  
   const handleNavigateToContract = (contractId: string) => {
-    window.location.href = `/contracts/${contractId}`;
+    navigate(`/contracts/${contractId}`);
   };
 
   return (

@@ -25,13 +25,13 @@ export function ContractsList({ contracts, onNavigateToContract }: ContractsList
           <div className="flex justify-between items-start">
             <div>
               <h3 className="font-semibold text-lg">
-                {contract.jobs?.title}
+                {contract.jobs?.title || 'Unnamed Job'}
               </h3>
               <p className="text-sm text-muted-foreground mb-2">
                 Started {contract.start_date ? formatDistanceToNow(new Date(contract.start_date), { addSuffix: true }) : ''}
               </p>
               <p className="text-sm">
-                <strong>Freelancer:</strong> {contract.profiles?.full_name}
+                <strong>Freelancer:</strong> {contract.profiles?.full_name || 'Unknown Freelancer'}
               </p>
               <p className="text-sm">
                 <strong>Rate:</strong> ${contract.rate}/{contract.jobs?.budget_type === 'hourly' ? 'hr' : 'fixed'}
