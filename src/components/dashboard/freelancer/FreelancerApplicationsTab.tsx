@@ -37,12 +37,10 @@ export function FreelancerApplicationsTab({ applications, contracts }: Applicati
         ) : (
           <div className="space-y-4">
             {applications.map((application) => {
-              // Extract job details properly - jobs is an array when using Postgres joins
-              const jobDetails = application.jobs && Array.isArray(application.jobs) && application.jobs.length > 0 
-                ? application.jobs[0] 
-                : application.jobs || {};
-                
-              // Get job title safely
+              // Get job details from the jobs object using the foreign key relationship from Supabase
+              const jobDetails = application.jobs || {};
+              
+              // Get job title safely, providing a fallback
               const jobTitle = jobDetails.title || 'Unnamed Job';
               
               // Get job budget type safely

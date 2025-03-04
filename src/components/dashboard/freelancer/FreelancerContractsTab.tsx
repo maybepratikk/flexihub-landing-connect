@@ -12,6 +12,9 @@ interface ContractsTabProps {
 export function FreelancerContractsTab({ contracts }: ContractsTabProps) {
   const navigate = useNavigate();
   
+  // Debug log to inspect contracts data structure
+  console.log("Contracts in FreelancerContractsTab:", contracts);
+  
   const handleNavigateToContract = (contractId: string) => {
     navigate(`/contracts/${contractId}`);
   };
@@ -32,10 +35,10 @@ export function FreelancerContractsTab({ contracts }: ContractsTabProps) {
         ) : (
           <div className="space-y-4">
             {contracts.map((contract) => {
-              // Get job details from the jobs field which contains the full job object
+              // Get job details from the jobs field
               const jobDetails = contract.jobs || {};
               
-              // Get client details from the profiles field which contains the client profile
+              // Get client details from the profiles field
               const clientDetails = contract.profiles || {};
               
               return (

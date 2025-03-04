@@ -1,20 +1,107 @@
 
 import { supabase } from './client';
-import { updateJobStatusDirectly, fixSpecificJob } from './jobs';
 
+// Get all contracts for a freelancer
+export async function getFreelancerContracts(freelancerId: string) {
+  console.log(`Getting contracts for freelancer: ${freelancerId}`);
+  try {
+    const { data, error } = await supabase
+      .from('contracts')
+      .select(`
+        *,
+        jobs!job_id(*),
+        profiles!client_id(id, full_name, avatar_url, email)
+      `)
+      .eq('freelancer_id', freelancerId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching freelancer contracts:', error);
+      throw error;
+    }
+    
+    console.log(`Retrieved ${data?.length || 0} contracts for freelancer ${freelancerId}:`, data);
+    return data || [];
+  } catch (error) {
+    console.error('Error in getFreelancerContracts:', error);
+    return [];
+  }
+}
+
+// Get all contracts for a client
+export async function getClientContracts(clientId: string) {
+  console.log(`Getting contracts for client: ${clientId}`);
+  try {
+    const { data, error } = await supabase
+      .from('contracts')
+      .select(`
+        *,
+        jobs!job_id(*),
+        profiles!freelancer_id(id, full_name, avatar_url, email),
+        freelancer_profiles!freelancer_id(*)
+      `)
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching client contracts:', error);
+      throw error;
+    }
+    
+    console.log(`Retrieved ${data?.length || 0} contracts for client ${clientId}:`, data);
+    return data || [];
+  } catch (error) {
+    console.error('Error in getClientContracts:', error);
+    return [];
+  }
+}
+
+// Get contract by ID
+export async function getContractById(contractId: string) {
+  console.log(`Getting contract by ID: ${contractId}`);
+  try {
+    const { data, error } = await supabase
+      .from('contracts')
+      .select(`
+        *,
+        jobs!job_id(*),
+        profiles!client_id(id, full_name, avatar_url, email),
+        freelancer:profiles!freelancer_id(id, full_name, avatar_url, email),
+        freelancer_profiles!freelancer_id(*)
+      `)
+      .eq('id', contractId)
+      .single();
+    
+    if (error) {
+      console.error(`Error fetching contract with ID ${contractId}:`, error);
+      return null;
+    }
+    
+    console.log(`Retrieved contract ${contractId}:`, data);
+    return data;
+  } catch (error) {
+    console.error('Error in getContractById:', error);
+    return null;
+  }
+}
+
+// Create a new contract
 export async function createContract(contractData: {
   job_id: string;
   freelancer_id: string;
   client_id: string;
   rate: number;
-  status: 'active' | 'completed' | 'terminated';
-  start_date: string;
 }) {
-  console.log('Creating contract with data:', contractData);
+  console.log("Creating contract with data:", contractData);
+  
   try {
     const { data, error } = await supabase
       .from('contracts')
-      .insert(contractData)
+      .insert({
+        ...contractData,
+        status: 'active',
+        start_date: new Date().toISOString()
+      })
       .select()
       .single();
     
@@ -24,24 +111,6 @@ export async function createContract(contractData: {
     }
     
     console.log('Contract created successfully:', data);
-    
-    // After contract creation, update the job status to in_progress
-    if (data) {
-      await updateJobStatusDirectly(contractData.job_id, 'in_progress');
-      
-      // Special handling for "Testing @1 am" job
-      const { data: job } = await supabase
-        .from('jobs')
-        .select('title')
-        .eq('id', contractData.job_id)
-        .single();
-        
-      if (job?.title === "Testing @1 am") {
-        console.log("Special handling for Testing @1 am job");
-        await fixSpecificJob("Testing @1 am");
-      }
-    }
-    
     return data;
   } catch (error) {
     console.error('Error in createContract:', error);
@@ -49,108 +118,40 @@ export async function createContract(contractData: {
   }
 }
 
-export async function getClientContracts(clientId: string) {
-  try {
-    console.log("Getting contracts for client:", clientId);
-    
-    if (!clientId) {
-      console.error("Client ID is required");
-      return [];
-    }
-    
-    const { data, error } = await supabase
-      .from('contracts')
-      .select(`
-        *,
-        jobs!contracts_job_id_fkey (*),
-        profiles!contracts_client_id_fkey (
-          id,
-          full_name,
-          avatar_url
-        )
-      `)
-      .eq('client_id', clientId)
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('Error fetching client contracts:', error);
-      return [];
-    }
-    
-    console.log(`Fetched ${data.length} client contracts:`, data);
-    return data;
-  } catch (error) {
-    console.error('Exception in getClientContracts:', error);
-    return [];
-  }
-}
-
-export async function getFreelancerContracts(freelancerId: string) {
-  try {
-    console.log(`Getting contracts for freelancer: ${freelancerId}`);
-    const { data, error } = await supabase
-      .from('contracts')
-      .select(`
-        *,
-        jobs!contracts_job_id_fkey (*),
-        profiles!contracts_freelancer_id_fkey (
-          id,
-          full_name,
-          avatar_url
-        ),
-        profiles!contracts_client_id_fkey (
-          id,
-          full_name,
-          avatar_url
-        )
-      `)
-      .eq('freelancer_id', freelancerId)
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('Error fetching freelancer contracts:', error);
-      return [];
-    }
-    
-    console.log(`Retrieved ${data?.length || 0} contracts for freelancer ${freelancerId}:`, data);
-    return data || [];
-  } catch (error) {
-    console.error('Exception in getFreelancerContracts:', error);
-    return [];
-  }
-}
-
-export async function getContractById(contractId: string) {
-  try {
-    console.log(`Getting details for contract: ${contractId}`);
-    const { data, error } = await supabase
-      .from('contracts')
-      .select(`
-        *,
-        jobs!contracts_job_id_fkey (*),
-        profiles!contracts_freelancer_id_fkey (
-          id,
-          full_name,
-          avatar_url
-        ),
-        profiles!contracts_client_id_fkey (
-          id,
-          full_name,
-          avatar_url
-        )
-      `)
-      .eq('id', contractId)
-      .single();
+// Update contract status
+export async function updateContractStatus(
+  contractId: string, 
+  status: 'active' | 'completed' | 'cancelled'
+) {
+  console.log(`Updating contract ${contractId} status to ${status}`);
   
+  const updates: any = { 
+    status, 
+    updated_at: new Date().toISOString() 
+  };
+  
+  // Add end date if the contract is being completed or cancelled
+  if (status === 'completed' || status === 'cancelled') {
+    updates.end_date = new Date().toISOString();
+  }
+  
+  try {
+    const { data, error } = await supabase
+      .from('contracts')
+      .update(updates)
+      .eq('id', contractId)
+      .select()
+      .single();
+    
     if (error) {
-      console.error('Error fetching contract:', error);
-      return null;
+      console.error(`Error updating contract ${contractId} status:`, error);
+      throw error;
     }
     
-    console.log('Contract details retrieved:', data);
+    console.log(`Contract ${contractId} status updated to ${status}:`, data);
     return data;
   } catch (error) {
-    console.error('Exception in getContractById:', error);
-    return null;
+    console.error('Error in updateContractStatus:', error);
+    throw error;
   }
 }
