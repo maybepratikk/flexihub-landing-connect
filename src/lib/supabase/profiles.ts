@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import type { User, FreelancerProfile, ClientProfile } from './types';
 
@@ -87,4 +86,53 @@ export async function updateClientProfile(userId: string, updates: Partial<Clien
   }
   
   return data;
+}
+
+export async function getFreelancers(filters: {
+  skills: string[];
+  experience?: 'entry' | 'intermediate' | 'expert';
+  hourlyRate: { min?: number; max?: number };
+  availability?: string;
+  search: string;
+}) {
+  let query = supabase
+    .from('profiles')
+    .select(`
+      *,
+      freelancer_profiles(*)
+    `)
+    .eq('user_type', 'freelancer')
+    .not('freelancer_profiles', 'is', null);
+
+  // Apply skills filter if provided
+  if (filters.skills && filters.skills.length > 0) {
+    query = query.contains('freelancer_profiles.skills', filters.skills);
+  }
+
+  // Apply hourly rate filter if provided
+  if (filters.hourlyRate.min !== undefined) {
+    query = query.gte('freelancer_profiles.hourly_rate', filters.hourlyRate.min);
+  }
+  if (filters.hourlyRate.max !== undefined) {
+    query = query.lte('freelancer_profiles.hourly_rate', filters.hourlyRate.max);
+  }
+
+  // Apply availability filter if provided
+  if (filters.availability) {
+    query = query.eq('freelancer_profiles.availability', filters.availability);
+  }
+
+  // Apply search filter if provided
+  if (filters.search) {
+    query = query.or(`full_name.ilike.%${filters.search}%, freelancer_profiles.bio.ilike.%${filters.search}%`);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching freelancers:', error);
+    return [];
+  }
+
+  return data || [];
 }
