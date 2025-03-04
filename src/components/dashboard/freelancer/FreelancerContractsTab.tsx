@@ -32,12 +32,10 @@ export function FreelancerContractsTab({ contracts }: ContractsTabProps) {
         ) : (
           <div className="space-y-4">
             {contracts.map((contract) => {
-              // Extract job details safely
-              const jobDetails = contract.jobs && Array.isArray(contract.jobs) && contract.jobs.length > 0 
-                ? contract.jobs[0] 
-                : contract.jobs || {};
+              // Get job details from the jobs field which contains the full job object
+              const jobDetails = contract.jobs || {};
               
-              // Extract client details safely
+              // Get client details from the profiles field which contains the client profile
               const clientDetails = contract.profiles || {};
               
               return (
@@ -45,7 +43,7 @@ export function FreelancerContractsTab({ contracts }: ContractsTabProps) {
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-semibold text-lg">
-                        {jobDetails.title || 'Unnamed Job'}
+                        {jobDetails.title || 'No Title Available'}
                       </h3>
                       <p className="text-sm text-muted-foreground mb-2">
                         Started {contract.start_date ? formatDistanceToNow(new Date(contract.start_date), { addSuffix: true }) : ''}

@@ -664,8 +664,12 @@ export async function getClientContracts(clientId: string) {
       .from('contracts')
       .select(`
         *,
-        jobs(*),
-        profiles!contracts_client_id_fkey(*)
+        jobs!contracts_job_id_fkey (*),
+        profiles!contracts_client_id_fkey (
+          id,
+          full_name,
+          avatar_url
+        )
       `)
       .eq('client_id', clientId)
       .order('created_at', { ascending: false });
@@ -691,8 +695,17 @@ export async function getFreelancerContracts(freelancerId: string) {
       .from('contracts')
       .select(`
         *,
-        jobs(*),
-        profiles!contracts_client_id_fkey(*)
+        jobs!contracts_job_id_fkey (*),
+        profiles!contracts_freelancer_id_fkey (
+          id,
+          full_name,
+          avatar_url
+        ),
+        profiles!contracts_client_id_fkey (
+          id,
+          full_name,
+          avatar_url
+        )
       `)
       .eq('freelancer_id', freelancerId)
       .order('created_at', { ascending: false });
@@ -734,9 +747,17 @@ export async function getContractById(contractId: string) {
       .from('contracts')
       .select(`
         *,
-        jobs(*),
-        profiles!contracts_freelancer_id_fkey(id, full_name, avatar_url),
-        profiles!contracts_client_id_fkey(id, full_name, avatar_url)
+        jobs!contracts_job_id_fkey (*),
+        profiles!contracts_freelancer_id_fkey (
+          id,
+          full_name,
+          avatar_url
+        ),
+        profiles!contracts_client_id_fkey (
+          id,
+          full_name,
+          avatar_url
+        )
       `)
       .eq('id', contractId)
       .single();
