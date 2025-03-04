@@ -16,6 +16,7 @@ export function FreelancerApplicationsTab({ applications, contracts }: Applicati
   
   // Debug log to inspect applications data structure
   console.log("Applications in FreelancerApplicationsTab:", applications);
+  console.log("Contracts in FreelancerApplicationsTab:", contracts);
   
   return (
     <Card>
@@ -46,7 +47,7 @@ export function FreelancerApplicationsTab({ applications, contracts }: Applicati
               // Get job budget type safely
               const budgetType = jobDetails.budget_type || 'hourly';
               
-              // Find the corresponding contract
+              // Find the corresponding contract for accepted applications
               const contract = contracts.find(c => c.job_id === application.job_id);
               
               return (
@@ -63,6 +64,9 @@ export function FreelancerApplicationsTab({ applications, contracts }: Applicati
                       </p>
                       <p className="text-sm">
                         <strong>Proposed Rate:</strong> ${application.proposed_rate}/{budgetType === 'hourly' ? 'hr' : 'fixed'}
+                      </p>
+                      <p className="text-sm mt-1">
+                        <strong>Category:</strong> {jobDetails.category || 'Not specified'}
                       </p>
                       <div className="mt-2">
                         <Badge 
@@ -99,8 +103,18 @@ export function FreelancerApplicationsTab({ applications, contracts }: Applicati
                           <span className="text-sm">Use the contract page to message your client</span>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Your application has been accepted! A contract has been created for this job.
+                          Your application has been accepted! {contract ? 'A contract has been created for this job.' : 'Contract is being set up.'}
                         </p>
+                        {contract && (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="mt-2 w-fit"
+                            onClick={() => navigate(`/contracts/${contract.id}`)}
+                          >
+                            Go to Contract
+                          </Button>
+                        )}
                       </div>
                     </div>
                   )}
