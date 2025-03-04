@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/contexts/AuthContext';
@@ -29,19 +28,25 @@ export default function ContractPage() {
     const fetchContract = async () => {
       setLoading(true);
       try {
+        console.log(`Fetching contract ${contractId} for user ${user.id}`);
         const fetchedContract = await getContractById(contractId);
         
         if (fetchedContract) {
+          console.log('Contract data fetched:', fetchedContract);
+          
           // Check if user is either the client or freelancer of this contract
           const isAuthorized = 
             fetchedContract.client_id === user.id || 
             fetchedContract.freelancer_id === user.id;
             
+          console.log(`User authorization check: ${isAuthorized} (client_id: ${fetchedContract.client_id}, freelancer_id: ${fetchedContract.freelancer_id}, user.id: ${user.id})`);
+            
           if (isAuthorized) {
-            console.log('Contract data:', fetchedContract);
+            console.log('User authorized to view contract');
             setContract(fetchedContract);
           } else {
             // Redirect if not authorized
+            console.log('User not authorized to view contract');
             navigate('/dashboard');
             toast({
               title: "Access Denied",
@@ -51,6 +56,7 @@ export default function ContractPage() {
           }
         } else {
           // Contract not found
+          console.log('Contract not found');
           navigate('/dashboard');
           toast({
             title: "Not Found",
@@ -92,16 +98,24 @@ export default function ContractPage() {
 
   const isClient = user?.id === contract.client_id;
   
+  // Extract job details and make sure we handle both array and object formats
+  const jobDetails = contract.jobs && Array.isArray(contract.jobs) && contract.jobs.length > 0
+    ? contract.jobs[0]
+    : contract.jobs || {};
+  
   // Get the correct other party data
   const otherPartyId = isClient ? contract.freelancer_id : contract.client_id;
-  let otherParty = null;
   
-  if (isClient && contract.profiles) {
-    // When viewing as client, get freelancer info
-    otherParty = contract.profiles;
-  } else if (!isClient && contract.profiles) {
-    // When viewing as freelancer, get client info
-    otherParty = contract.profiles;
+  // Handle different structures for profiles data
+  let otherParty = null;
+  if (contract.profiles) {
+    if (isClient) {
+      // When viewing as client, get freelancer info (from freelancer_id key)
+      otherParty = contract.profiles.freelancer_id || contract.profiles;
+    } else {
+      // When viewing as freelancer, get client info (from client_id key)
+      otherParty = contract.profiles.client_id || contract.profiles;
+    }
   }
 
   return (
@@ -134,7 +148,7 @@ export default function ContractPage() {
               <div>
                 <h3 className="text-sm font-semibold mb-1">Rate</h3>
                 <p className="text-lg font-medium">
-                  ${contract.rate}{contract.jobs?.budget_type === 'hourly' ? '/hr' : ' (fixed)'}
+                  ${contract.rate}{jobDetails.budget_type === 'hourly' ? '/hr' : ' (fixed)'}
                 </p>
               </div>
               
@@ -154,17 +168,17 @@ export default function ContractPage() {
               
               <div>
                 <h3 className="text-sm font-semibold mb-1">Job</h3>
-                {contract.jobs && (
+                {jobDetails && (
                   <div className="mt-2">
-                    <h4 className="font-medium">{contract.jobs.title || 'Unnamed Job'}</h4>
+                    <h4 className="font-medium">{jobDetails.title || 'Unnamed Job'}</h4>
                     <p className="text-sm text-muted-foreground truncate">
-                      {contract.jobs.description && contract.jobs.description.substring(0, 100)}...
+                      {jobDetails.description && jobDetails.description.substring(0, 100)}...
                     </p>
-                    {contract.jobs.id && (
+                    {jobDetails.id && (
                       <Button 
                         variant="link" 
                         className="p-0 h-auto mt-1"
-                        onClick={() => navigate(`/jobs/${contract.jobs?.id}`)}
+                        onClick={() => navigate(`/jobs/${jobDetails.id}`)}
                       >
                         View Job Details
                       </Button>

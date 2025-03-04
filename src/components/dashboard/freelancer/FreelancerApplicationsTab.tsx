@@ -37,11 +37,16 @@ export function FreelancerApplicationsTab({ applications, contracts }: Applicati
         ) : (
           <div className="space-y-4">
             {applications.map((application) => {
-              // Get the job title by checking all possible data structures
-              const jobTitle = application.jobs?.title || 'Unnamed Job';
+              // Extract job details properly - jobs is an array when using Postgres joins
+              const jobDetails = application.jobs && Array.isArray(application.jobs) && application.jobs.length > 0 
+                ? application.jobs[0] 
+                : application.jobs || {};
+                
+              // Get job title safely
+              const jobTitle = jobDetails.title || 'Unnamed Job';
               
               // Get job budget type safely
-              const budgetType = application.jobs?.budget_type || 'hourly';
+              const budgetType = jobDetails.budget_type || 'hourly';
               
               // Find the corresponding contract
               const contract = contracts.find(c => c.job_id === application.job_id);

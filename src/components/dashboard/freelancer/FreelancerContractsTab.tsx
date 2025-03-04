@@ -31,43 +31,53 @@ export function FreelancerContractsTab({ contracts }: ContractsTabProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            {contracts.map((contract) => (
-              <div key={contract.id} className="p-4 border rounded-lg">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold text-lg">
-                      {contract.jobs?.title || 'Unnamed Job'}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Started {contract.start_date ? formatDistanceToNow(new Date(contract.start_date), { addSuffix: true }) : ''}
-                    </p>
-                    <p className="text-sm">
-                      <strong>Client:</strong> {contract.profiles?.full_name || 'Unknown Client'}
-                    </p>
-                    <p className="text-sm">
-                      <strong>Rate:</strong> ${contract.rate}/{contract.jobs?.budget_type === 'hourly' ? 'hr' : 'fixed'}
-                    </p>
-                    <div className="mt-2">
-                      <Badge 
-                        variant={
-                          contract.status === 'active' ? 'secondary' : 
-                          contract.status === 'completed' ? 'outline' : 'destructive'
-                        }
-                      >
-                        {contract.status}
-                      </Badge>
+            {contracts.map((contract) => {
+              // Extract job details safely
+              const jobDetails = contract.jobs && Array.isArray(contract.jobs) && contract.jobs.length > 0 
+                ? contract.jobs[0] 
+                : contract.jobs || {};
+              
+              // Extract client details safely
+              const clientDetails = contract.profiles || {};
+              
+              return (
+                <div key={contract.id} className="p-4 border rounded-lg">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-semibold text-lg">
+                        {jobDetails.title || 'Unnamed Job'}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Started {contract.start_date ? formatDistanceToNow(new Date(contract.start_date), { addSuffix: true }) : ''}
+                      </p>
+                      <p className="text-sm">
+                        <strong>Client:</strong> {clientDetails.full_name || 'Unknown Client'}
+                      </p>
+                      <p className="text-sm">
+                        <strong>Rate:</strong> ${contract.rate}/{jobDetails.budget_type === 'hourly' ? 'hr' : 'fixed'}
+                      </p>
+                      <div className="mt-2">
+                        <Badge 
+                          variant={
+                            contract.status === 'active' ? 'secondary' : 
+                            contract.status === 'completed' ? 'outline' : 'destructive'
+                          }
+                        >
+                          {contract.status}
+                        </Badge>
+                      </div>
                     </div>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleNavigateToContract(contract.id)}
+                    >
+                      View Details
+                    </Button>
                   </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    onClick={() => handleNavigateToContract(contract.id)}
-                  >
-                    View Details
-                  </Button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>
