@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/contexts/AuthContext';
@@ -94,7 +95,6 @@ export default function ApplicationsPage() {
               freelancer_id: application.freelancer_id,
               client_id: user.id,
               rate: application.proposed_rate || 0,
-              start_date: new Date().toISOString(),
               status: 'active'
             });
 

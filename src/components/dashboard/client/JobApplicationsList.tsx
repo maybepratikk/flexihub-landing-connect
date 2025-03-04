@@ -1,4 +1,3 @@
-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -58,8 +57,7 @@ export function JobApplicationsList({
           freelancer_id: applicantId,
           client_id: user.id,
           rate: rate,
-          status: 'active' as 'active' | 'completed' | 'terminated',
-          start_date: new Date().toISOString()
+          status: 'active' as const
         };
         
         console.log('Contract data for creation:', contractData);

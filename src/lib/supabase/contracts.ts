@@ -1,5 +1,6 @@
 
 import { supabase } from './client';
+import { Contract } from './types';
 
 // Get all contracts for a freelancer
 export async function getFreelancerContracts(freelancerId: string) {
@@ -91,6 +92,8 @@ export async function createContract(contractData: {
   freelancer_id: string;
   client_id: string;
   rate: number;
+  start_date?: string;
+  status?: 'active' | 'completed' | 'terminated';
 }) {
   console.log("Creating contract with data:", contractData);
   
@@ -98,9 +101,12 @@ export async function createContract(contractData: {
     const { data, error } = await supabase
       .from('contracts')
       .insert({
-        ...contractData,
-        status: 'active',
-        start_date: new Date().toISOString()
+        job_id: contractData.job_id,
+        freelancer_id: contractData.freelancer_id,
+        client_id: contractData.client_id,
+        rate: contractData.rate,
+        status: contractData.status || 'active',
+        start_date: contractData.start_date || new Date().toISOString()
       })
       .select()
       .single();
@@ -121,7 +127,7 @@ export async function createContract(contractData: {
 // Update contract status
 export async function updateContractStatus(
   contractId: string, 
-  status: 'active' | 'completed' | 'cancelled'
+  status: 'active' | 'completed' | 'terminated'
 ) {
   console.log(`Updating contract ${contractId} status to ${status}`);
   
@@ -131,7 +137,7 @@ export async function updateContractStatus(
   };
   
   // Add end date if the contract is being completed or cancelled
-  if (status === 'completed' || status === 'cancelled') {
+  if (status === 'completed' || status === 'terminated') {
     updates.end_date = new Date().toISOString();
   }
   

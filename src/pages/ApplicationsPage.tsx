@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/contexts/AuthContext';
@@ -40,7 +39,6 @@ export default function ApplicationsPage() {
         const fetchedApplications = await getJobApplications(jobId);
         setApplications(fetchedApplications);
       } else {
-        // Redirect if not the job owner
         navigate('/dashboard');
         toast({
           title: "Access Denied",
@@ -60,30 +58,25 @@ export default function ApplicationsPage() {
       const updatedApplication = await updateApplicationStatus(applicationId, status);
       
       if (updatedApplication) {
-        // Update local state
         setApplications(prev => 
           prev.map(app => 
             app.id === applicationId ? { ...app, status } : app
           )
         );
         
-        // If accepting, create a contract
         if (status === 'accepted' && job) {
           const application = applications.find(app => app.id === applicationId);
           
           if (application) {
-            // Create a contract
             const contract = await createContract({
               job_id: job.id,
               client_id: job.client_id,
               freelancer_id: application.freelancer_id,
               rate: application.proposed_rate || 0,
-              start_date: new Date().toISOString(),
               status: 'active'
             });
             
             if (contract) {
-              // Update job status to in_progress
               await updateJobStatus(job.id, 'in_progress');
               
               toast({
@@ -91,7 +84,6 @@ export default function ApplicationsPage() {
                 description: "A contract has been created with the freelancer.",
               });
               
-              // Redirect to the contract page
               navigate(`/contracts/${contract.id}`);
             }
           }
@@ -129,7 +121,6 @@ export default function ApplicationsPage() {
     );
   }
 
-  // Filter applications by status for tabs
   const pendingApplications = applications.filter(app => app.status === 'pending');
   const acceptedApplications = applications.filter(app => app.status === 'accepted');
   const rejectedApplications = applications.filter(app => app.status === 'rejected');
