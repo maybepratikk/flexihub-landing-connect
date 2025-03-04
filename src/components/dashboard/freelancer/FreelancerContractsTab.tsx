@@ -1,15 +1,21 @@
 
+import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDistanceToNow } from 'date-fns';
-import { Link } from 'react-router-dom';
 
 interface ContractsTabProps {
   contracts: any[];
 }
 
 export function FreelancerContractsTab({ contracts }: ContractsTabProps) {
+  const navigate = useNavigate();
+  
+  const handleNavigateToContract = (contractId: string) => {
+    navigate(`/contracts/${contractId}`);
+  };
+  
   return (
     <Card>
       <CardHeader>
@@ -52,10 +58,12 @@ export function FreelancerContractsTab({ contracts }: ContractsTabProps) {
                       </Badge>
                     </div>
                   </div>
-                  <Button size="sm" variant="outline" asChild>
-                    <Link to={`/contracts/${contract.id}`}>
-                      View Details
-                    </Link>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => handleNavigateToContract(contract.id)}
+                  >
+                    View Details
                   </Button>
                 </div>
               </div>

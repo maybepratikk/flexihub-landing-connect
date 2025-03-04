@@ -728,18 +728,30 @@ export async function getApplicationById(applicationId: string) {
 
 // Function to get a specific contract
 export async function getContractById(contractId: string) {
-  const { data, error } = await supabase
-    .from('contracts')
-    .select('*, jobs!inner(*), profiles!freelancer_id(id, full_name, avatar_url), profiles!client_id(id, full_name, avatar_url)')
-    .eq('id', contractId)
-    .single();
+  try {
+    console.log(`Getting details for contract: ${contractId}`);
+    const { data, error } = await supabase
+      .from('contracts')
+      .select(`
+        *,
+        jobs(*),
+        profiles!contracts_freelancer_id_fkey(id, full_name, avatar_url),
+        profiles!contracts_client_id_fkey(id, full_name, avatar_url)
+      `)
+      .eq('id', contractId)
+      .single();
   
-  if (error) {
-    console.error('Error fetching contract:', error);
+    if (error) {
+      console.error('Error fetching contract:', error);
+      return null;
+    }
+    
+    console.log('Contract details retrieved:', data);
+    return data;
+  } catch (error) {
+    console.error('Exception in getContractById:', error);
     return null;
   }
-  
-  return data;
 }
 
 // Function to send a chat message
