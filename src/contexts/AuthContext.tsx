@@ -1,10 +1,8 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
-// Extended User type that includes user_type
 export interface ExtendedUser extends User {
   user_metadata: {
     full_name?: string;
@@ -17,7 +15,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, userType: string) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string, forceUserType?: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 }
@@ -31,7 +29,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check for active session and set the user
     const fetchSession = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
       
@@ -51,7 +48,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     fetchSession();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log('Auth state changed:', _event);
       setSession(session);
@@ -68,7 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       
-      // Sign up the user
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -81,8 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) throw error;
-      
-      // Profile record will be created automatically via database trigger
       
       toast({
         title: "Success!",
@@ -99,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, forceUserType?: string) => {
     try {
       setLoading(true);
       const { error } = await supabase.auth.signInWithPassword({
@@ -108,6 +101,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) throw error;
+      
+      if (forceUserType) {
+        if (forceUserType === 'admin') {
+          await supabase.auth.updateUser({
+            data: {
+              user_type: 'admin'
+            }
+          });
+        }
+      }
       
       toast({
         title: "Welcome back!",
@@ -127,8 +130,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       setLoading(true);
-      
-      // Clear session data first before sending the sign-out request
       setUser(null);
       setSession(null);
       
@@ -139,13 +140,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error;
       }
       
-      // Show success toast
       toast({
         title: "Signed out",
         description: "You have been successfully signed out.",
       });
 
-      // Force navigation to home page after signout
       window.location.href = '/';
       
     } catch (error: any) {
