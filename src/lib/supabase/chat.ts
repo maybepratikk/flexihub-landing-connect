@@ -38,24 +38,27 @@ export async function getChatMessages(contractId: string) {
 }
 
 export async function markMessagesAsRead(contractId: string, userId: string) {
-  const { data, error } = await supabase
+  // Only mark messages as read that were sent by the other party
+  const { error } = await supabase
     .from('chat_messages')
     .update({ read: true })
     .eq('contract_id', contractId)
-    .neq('sender_id', userId);
+    .neq('sender_id', userId)
+    .eq('read', false); // Only update messages that aren't already read
   
   if (error) {
     console.error('Error marking messages as read:', error);
     return null;
   }
   
-  return data;
+  return true;
 }
 
 export async function subscribeToContractMessages(
   contractId: string, 
   callback: (message: ChatMessage) => void
 ) {
+  // Set up a channel specifically for this contract's messages
   return supabase
     .channel(`contract-messages-${contractId}`)
     .on('postgres_changes', 
@@ -66,7 +69,7 @@ export async function subscribeToContractMessages(
         filter: `contract_id=eq.${contractId}`
       }, 
       (payload) => {
-        // Cast payload.new to ChatMessage type
+        // Pass the new message data to the callback
         callback(payload.new as ChatMessage);
       }
     )

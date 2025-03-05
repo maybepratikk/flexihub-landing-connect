@@ -4,9 +4,9 @@ import {
   sendChatMessage, 
   getChatMessages, 
   markMessagesAsRead, 
-  subscribeToContractMessages,
-  ChatMessage 
-} from '@/lib/supabase';
+  subscribeToContractMessages 
+} from '@/lib/supabase/chat';
+import { ChatMessage } from '@/lib/supabase/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,6 +14,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Send } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ChatInterfaceProps {
   contractId: string;
@@ -25,6 +26,7 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   
@@ -107,9 +109,10 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
   }, [messages]);
   
   const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || sending) return;
     
     try {
+      setSending(true);
       setNewMessage(''); // Clear input immediately for better UX
       const sentMessage = await sendChatMessage(contractId, currentUserId, newMessage.trim());
       
@@ -125,6 +128,8 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
         description: "Your message could not be sent. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setSending(false);
     }
   };
   
@@ -139,8 +144,10 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
         {loading ? (
-          <div className="flex justify-center items-center h-full">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+          <div className="space-y-4">
+            <MessageSkeleton />
+            <MessageSkeleton />
+            <MessageSkeleton />
           </div>
         ) : messages.length === 0 ? (
           <div className="text-center text-muted-foreground py-10">
@@ -167,11 +174,24 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             className="flex-grow"
+            disabled={sending}
           />
-          <Button size="icon" onClick={handleSendMessage} disabled={!newMessage.trim()}>
+          <Button size="icon" onClick={handleSendMessage} disabled={!newMessage.trim() || sending}>
             <Send className="h-4 w-4" />
           </Button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function MessageSkeleton() {
+  return (
+    <div className="flex items-start gap-2">
+      <Skeleton className="h-8 w-8 rounded-full" />
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-[250px]" />
+        <Skeleton className="h-3 w-[100px]" />
       </div>
     </div>
   );
