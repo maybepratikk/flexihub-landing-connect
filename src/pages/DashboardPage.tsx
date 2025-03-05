@@ -27,7 +27,34 @@ const DashboardPage = () => {
       console.log("DashboardPage - Loading profile data for user:", user.id);
       
       // Get basic profile info
-      const basicProfile = await getUserProfile(user.id);
+      // First try from the user metadata
+      const userType = user.user_metadata?.user_type;
+      console.log("User metadata from auth:", user.user_metadata);
+      
+      // Then try from the profiles table
+      let basicProfile = await getUserProfile(user.id);
+      console.log("Profile from database:", basicProfile);
+      
+      // If profile doesn't exist in database but we have user metadata, create the profile
+      if (!basicProfile && userType) {
+        console.log("Creating missing profile with type:", userType);
+        const { data, error } = await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name,
+            user_type: userType,
+          }, { onConflict: 'id' });
+          
+        if (error) {
+          console.error("Error creating profile:", error);
+        } else {
+          // Fetch the profile again
+          basicProfile = await getUserProfile(user.id);
+        }
+      }
+      
       console.log("DashboardPage - Basic profile loaded:", basicProfile);
       setProfile(basicProfile);
       
@@ -74,6 +101,14 @@ const DashboardPage = () => {
             setDetailedProfile(data);
           }
         }
+      } else if (userType) {
+        // Use the user metadata if database profile not available
+        setProfile({
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name,
+          user_type: userType
+        });
       }
     } catch (error: any) {
       console.error('Error loading profile data:', error);
@@ -90,7 +125,6 @@ const DashboardPage = () => {
 
   useEffect(() => {
     loadProfileData();
-    // Removed periodic refresh
   }, [loadProfileData]);
 
   // If not logged in, redirect to sign in

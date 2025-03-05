@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -64,6 +65,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       
+      console.log("Signing up user with type:", userType);
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -76,6 +79,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) throw error;
+      
+      // Ensure the profile entry is created in the profiles table
+      if (data?.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            email: email,
+            full_name: fullName,
+            user_type: userType,
+          }, { onConflict: 'id' });
+        
+        if (profileError) {
+          console.error("Error creating profile:", profileError);
+          throw profileError;
+        }
+      }
       
       toast({
         title: "Success!",
