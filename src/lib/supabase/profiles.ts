@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import type { User, FreelancerProfile, ClientProfile } from './types';
 
@@ -106,7 +107,7 @@ export async function getFreelancers(filters: {
 
   // Apply skills filter if provided
   if (filters.skills && filters.skills.length > 0) {
-    query = query.contains('freelancer_profiles.skills', filters.skills);
+    query = query.or(filters.skills.map(skill => `freelancer_profiles.skills.cs.{${skill}}`).join(','));
   }
 
   // Apply hourly rate filter if provided
@@ -131,7 +132,7 @@ export async function getFreelancers(filters: {
 
   if (error) {
     console.error('Error fetching freelancers:', error);
-    return [];
+    throw new Error(`Failed to fetch freelancers: ${error.message}`);
   }
 
   return data || [];

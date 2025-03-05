@@ -2,8 +2,8 @@
 import { useEffect, useState } from "react";
 import { getFreelancers } from "@/lib/supabase";
 import { FreelancerCard } from "./FreelancerCard";
-import { FreelancerLoadingState } from "@/components/dashboard/freelancer/FreelancerLoadingState";
-import { FreelancerEmptyState } from "@/components/dashboard/freelancer/FreelancerEmptyState";
+import { Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface FreelancerListProps {
   filters: {
@@ -18,15 +18,20 @@ interface FreelancerListProps {
 export function FreelancerList({ filters }: FreelancerListProps) {
   const [freelancers, setFreelancers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchFreelancers() {
       setLoading(true);
+      setError(null);
       try {
+        console.log("Fetching freelancers with filters:", filters);
         const data = await getFreelancers(filters);
+        console.log("Fetched freelancers:", data);
         setFreelancers(data);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching freelancers:", error);
+        setError(error.message || "Failed to load freelancers");
       } finally {
         setLoading(false);
       }
@@ -34,6 +39,34 @@ export function FreelancerList({ filters }: FreelancerListProps) {
 
     fetchFreelancers();
   }, [filters]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading freelancers...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive" className="my-4">
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (freelancers.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <h3 className="text-xl font-semibold mb-2">No freelancers found</h3>
+        <p className="text-muted-foreground text-center">
+          Try adjusting your filters or search criteria
+        </p>
+      </div>
+    );
+  }
 
   // Group freelancers by experience level
   const groupedFreelancers = {
@@ -48,21 +81,6 @@ export function FreelancerList({ filters }: FreelancerListProps) {
       (f.freelancer_profiles?.years_experience || 0) < 3
     ),
   };
-
-  if (loading) {
-    return <FreelancerLoadingState />;
-  }
-
-  if (freelancers.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <h3 className="text-xl font-semibold mb-2">No freelancers found</h3>
-        <p className="text-muted-foreground text-center">
-          Try adjusting your filters or search criteria
-        </p>
-      </div>
-    );
-  }
 
   // If experience filter is active, only show that category
   if (filters.experience) {

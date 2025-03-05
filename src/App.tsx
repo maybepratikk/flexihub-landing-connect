@@ -5,6 +5,8 @@ import { AuthProvider } from './contexts/AuthContext';
 
 import { MainLayout } from './components/layout/MainLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { ClientRoute } from './components/auth/ClientRoute';
+import { FreelancerRoute } from './components/auth/FreelancerRoute';
 
 import LandingPage from './pages/LandingPage';
 import HomePage from './pages/HomePage';
@@ -71,9 +73,14 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/find-talent" element={
-              <ProtectedRoute>
+              <ClientRoute>
                 <FindTalentPage />
-              </ProtectedRoute>
+              </ClientRoute>
+            } />
+            <Route path="/find-projects" element={
+              <FreelancerRoute>
+                <JobsPage />
+              </FreelancerRoute>
             } />
             <Route path="*" element={<NotFound />} />
           </Route>

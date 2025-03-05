@@ -17,19 +17,42 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
-const navLinks = [
-  { name: 'How it Works', href: '/how-it-works' },
-  { name: 'Find Talent', href: '/find-talent' },
-  { name: 'Find Projects', href: '/find-projects' },
-  { name: 'Pricing', href: '/pricing' },
-];
-
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Get user type from user metadata
+  const userType = user?.user_metadata?.user_type;
+
+  // Define navigation links based on user type
+  const getNavLinks = () => {
+    const commonLinks = [{ name: 'How it Works', href: '/how-it-works' }];
+    
+    if (!user) {
+      return commonLinks;
+    }
+    
+    if (userType === 'client') {
+      return [
+        ...commonLinks,
+        { name: 'Find Talent', href: '/find-talent' }
+      ];
+    }
+    
+    if (userType === 'freelancer') {
+      return [
+        ...commonLinks,
+        { name: 'Find Projects', href: '/find-projects' }
+      ];
+    }
+    
+    return commonLinks;
+  };
+
+  const navLinks = getNavLinks();
 
   // Add scroll event listener
   useEffect(() => {
