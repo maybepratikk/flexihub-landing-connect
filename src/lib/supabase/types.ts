@@ -33,3 +33,87 @@ export interface ClientProfile {
   created_at?: string;
   updated_at?: string;
 }
+
+// Add Job interface
+export interface Job {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  skills_required: string[];
+  budget_min: number;
+  budget_max: number;
+  budget_type: string;
+  experience_level?: string;
+  duration?: string;
+  status: string;
+  client_id: string;
+  created_at?: string;
+  updated_at?: string;
+  profiles?: {
+    full_name?: string;
+    avatar_url?: string;
+  };
+}
+
+// Add JobApplication interface
+export interface JobApplication {
+  id: string;
+  job_id: string;
+  freelancer_id: string;
+  cover_letter?: string;
+  pitch?: string;
+  proposed_rate?: number;
+  status: string;
+  contact_email?: string;
+  contact_phone?: string;
+  created_at?: string;
+  updated_at?: string;
+  profiles?: {
+    full_name?: string;
+    avatar_url?: string;
+  };
+}
+
+// Add Contract interface
+export interface Contract {
+  id: string;
+  job_id: string;
+  client_id: string;
+  freelancer_id: string;
+  rate: number;
+  status: string;
+  start_date?: string;
+  end_date?: string;
+  created_at?: string;
+  updated_at?: string;
+  jobs?: Job;
+  client?: {
+    full_name?: string;
+    avatar_url?: string;
+  };
+  freelancer?: {
+    full_name?: string;
+    avatar_url?: string;
+  };
+  profiles?: {
+    client_id?: {
+      full_name?: string;
+      avatar_url?: string;
+    };
+    freelancer_id?: {
+      full_name?: string;
+      avatar_url?: string;
+    };
+  };
+}
+
+// Add ChatMessage interface
+export interface ChatMessage {
+  id: string;
+  contract_id: string;
+  sender_id: string;
+  message: string;
+  read: boolean;
+  created_at?: string;
+}

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -9,6 +8,7 @@ export interface ExtendedUser extends User {
     full_name?: string;
     user_type?: 'freelancer' | 'client';
   };
+  user_type?: 'freelancer' | 'client'; // Add this property directly on the user
 }
 
 interface AuthContextType {
