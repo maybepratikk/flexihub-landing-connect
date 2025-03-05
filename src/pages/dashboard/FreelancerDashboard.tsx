@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -5,7 +6,6 @@ import { getFreelancerProfile, getFreelancerApplications, getFreelancerContracts
 import { useToast } from '@/components/ui/use-toast';
 import {
   FreelancerDashboardHeader,
-  FreelancerStatusNotifications,
   FreelancerStatsCards,
   FreelancerProfileCard,
   FreelancerApplicationsTab,
@@ -21,7 +21,6 @@ export function FreelancerDashboard() {
   const [profile, setProfile] = useState<any>(null);
   const [applications, setApplications] = useState<any[]>([]);
   const [contracts, setContracts] = useState<any[]>([]);
-  const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
   
   const loadData = useCallback(async () => {
     if (!user) {
@@ -66,10 +65,6 @@ export function FreelancerDashboard() {
     loadData();
   }, [loadData]);
 
-  const dismissNotification = (applicationId: string) => {
-    setDismissedNotifications(prev => [...prev, applicationId]);
-  };
-  
   if (loading) {
     return <FreelancerLoadingState />;
   }
@@ -84,25 +79,9 @@ export function FreelancerDashboard() {
   const rejectedApplications = applications?.filter(app => app.status === 'rejected')?.length || 0;
   const activeContracts = contracts?.filter(contract => contract.status === 'active')?.length || 0;
   
-  // Find recent status changes (within last 7 days)
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  
-  const recentStatusChanges = applications?.filter(app => {
-    const updatedAt = app?.updated_at ? new Date(app.updated_at) : null;
-    return (app?.status === 'accepted' || app?.status === 'rejected') && 
-           updatedAt && updatedAt > sevenDaysAgo &&
-           !dismissedNotifications.includes(app.id);
-  }) || [];
-  
   return (
     <div className="space-y-8">
       <FreelancerDashboardHeader />
-      
-      <FreelancerStatusNotifications 
-        recentStatusChanges={recentStatusChanges} 
-        onDismiss={dismissNotification} 
-      />
       
       <FreelancerStatsCards 
         pendingApplications={pendingApplications}
