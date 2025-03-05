@@ -35,11 +35,15 @@ export function FreelancerContractsTab({ contracts }: ContractsTabProps) {
         ) : (
           <div className="space-y-4">
             {contracts.map((contract) => {
-              // Get job details from the jobs field
+              // Get job details from the jobs field - handle both object and array formats
               const jobDetails = contract.jobs || {};
               
-              // Get client details from the profiles field
+              // Get client details from the client field
               const clientDetails = contract.client || {};
+              
+              // Debug logging of job details for this specific contract
+              console.log(`Contract ${contract.id} job details:`, jobDetails);
+              console.log(`Contract ${contract.id} client details:`, clientDetails);
               
               return (
                 <div key={contract.id} className="p-4 border rounded-lg">

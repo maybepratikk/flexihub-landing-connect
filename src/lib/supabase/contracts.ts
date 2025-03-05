@@ -67,15 +67,70 @@ export async function getContractById(contractId: string) {
         *,
         jobs:job_id(*),
         client:profiles!client_id(id, full_name, avatar_url, email),
-        freelancer:profiles!freelancer_id(id, full_name, avatar_url, email),
-        freelancer_profiles:freelancer_id(*)
+        freelancer:profiles!freelancer_id(id, full_name, avatar_url, email)
       `)
       .eq('id', contractId)
       .single();
     
     if (error) {
       console.error(`Error fetching contract with ID ${contractId}:`, error);
-      return null;
+      
+      // If we get an error on the join, try a simpler query
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('contracts')
+        .select(`*`)
+        .eq('id', contractId)
+        .single();
+        
+      if (fallbackError) {
+        console.error(`Fallback query also failed for contract ${contractId}:`, fallbackError);
+        return null;
+      }
+      
+      console.log(`Retrieved basic contract ${contractId} without joins:`, fallbackData);
+      
+      // If we got the basic contract, try to fetch job details separately
+      if (fallbackData && fallbackData.job_id) {
+        const { data: jobData } = await supabase
+          .from('jobs')
+          .select('*')
+          .eq('id', fallbackData.job_id)
+          .single();
+          
+        console.log(`Job data for contract ${contractId}:`, jobData);
+        
+        if (jobData) {
+          fallbackData.jobs = jobData;
+        }
+        
+        // Fetch client profile
+        if (fallbackData.client_id) {
+          const { data: clientData } = await supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url, email')
+            .eq('id', fallbackData.client_id)
+            .single();
+            
+          if (clientData) {
+            fallbackData.client = clientData;
+          }
+        }
+        
+        // Fetch freelancer profile
+        if (fallbackData.freelancer_id) {
+          const { data: freelancerData } = await supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url, email')
+            .eq('id', fallbackData.freelancer_id)
+            .single();
+            
+          if (freelancerData) {
+            fallbackData.freelancer = freelancerData;
+          }
+        }
+      }
+      
+      return fallbackData;
     }
     
     console.log(`Retrieved contract ${contractId}:`, data);

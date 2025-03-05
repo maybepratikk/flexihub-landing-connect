@@ -100,9 +100,8 @@ export default function ContractPage() {
   const isClient = user?.id === contract.client_id;
   
   // Extract job details and make sure we handle both array and object formats
-  const jobDetails = contract.jobs && Array.isArray(contract.jobs) && contract.jobs.length > 0
-    ? contract.jobs[0]
-    : contract.jobs || {};
+  const jobDetails = contract.jobs || {};
+  console.log("Job details extracted:", jobDetails);
   
   // Get the correct other party data
   const otherPartyId = isClient ? contract.freelancer_id : contract.client_id;

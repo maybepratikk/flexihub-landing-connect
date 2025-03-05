@@ -119,7 +119,7 @@ export type Contract = {
     avatar_url?: string;
     email?: string;
   };
-  jobs?: {
+  jobs?: Job | { 
     title?: string;
     description?: string;
     budget_type?: 'fixed' | 'hourly';
