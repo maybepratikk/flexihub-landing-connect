@@ -35,31 +35,49 @@ export function FreelancerContractsTab({ contracts }: ContractsTabProps) {
         ) : (
           <div className="space-y-4">
             {contracts.map((contract) => {
-              // Get job details from the jobs field - handle both object and array formats
-              const jobDetails = contract.jobs || {};
+              // Get job details, ensuring we handle all possible structures
+              let jobTitle = 'No Title Available';
+              let budgetType = 'hourly';
               
-              // Get client details from the client field
-              const clientDetails = contract.client || {};
+              // Try to extract job details from different possible structures
+              if (contract.jobs) {
+                // Check if jobs is an object with title property
+                if (typeof contract.jobs === 'object' && contract.jobs.title) {
+                  jobTitle = contract.jobs.title;
+                  budgetType = contract.jobs.budget_type || 'hourly';
+                }
+              }
               
-              // Debug logging of job details for this specific contract
-              console.log(`Contract ${contract.id} job details:`, jobDetails);
-              console.log(`Contract ${contract.id} client details:`, clientDetails);
+              // Get client details from various possible structures
+              const clientName = contract.client?.full_name || 
+                                 contract.profiles?.client_id?.full_name || 
+                                 'Unknown Client';
+              
+              // Log detailed information for debugging
+              console.log(`Contract ${contract.id}:`, {
+                jobData: contract.jobs,
+                clientData: contract.client,
+                profiles: contract.profiles,
+                extractedTitle: jobTitle,
+                extractedBudgetType: budgetType,
+                extractedClientName: clientName
+              });
               
               return (
                 <div key={contract.id} className="p-4 border rounded-lg">
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-semibold text-lg">
-                        {jobDetails.title || 'No Title Available'}
+                        {jobTitle}
                       </h3>
                       <p className="text-sm text-muted-foreground mb-2">
                         Started {contract.start_date ? formatDistanceToNow(new Date(contract.start_date), { addSuffix: true }) : ''}
                       </p>
                       <p className="text-sm">
-                        <strong>Client:</strong> {clientDetails.full_name || 'Unknown Client'}
+                        <strong>Client:</strong> {clientName}
                       </p>
                       <p className="text-sm">
-                        <strong>Rate:</strong> ${contract.rate}/{jobDetails.budget_type === 'hourly' ? 'hr' : 'fixed'}
+                        <strong>Rate:</strong> ${contract.rate}/{budgetType === 'hourly' ? 'hr' : 'fixed'}
                       </p>
                       <div className="mt-2">
                         <Badge 
