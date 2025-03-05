@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,10 +7,6 @@ import {
   getClientProfile, 
   getClientJobs, 
   getClientContracts,
-  updateApplicationStatus,
-  createContract,
-  updateJobStatus,
-  updateJobStatusDirectly,
   fixSpecificJob
 } from '@/lib/supabase';
 import { ClientDashboardHeader } from '@/components/dashboard/client/ClientDashboardHeader';
@@ -79,79 +76,9 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
     loadData();
   }, [loadData]);
 
-  const handleUpdateApplicationStatus = async (jobId: string, applicationId: string, status: 'accepted' | 'rejected') => {
+  // Simplified function that just refreshes data after application status update
+  const handleUpdateApplicationStatus = async () => {
     try {
-      console.log(`ClientDashboard - Updating application ${applicationId} for job ${jobId} to status: ${status}`);
-      
-      // Update the application status
-      const updatedApplication = await updateApplicationStatus(applicationId, status);
-      
-      if (!updatedApplication) {
-        throw new Error('Failed to update application status');
-      }
-      
-      console.log("Application updated successfully:", updatedApplication);
-      
-      // If the application was accepted, create a contract and update job status
-      if (status === 'accepted') {
-        // Get the application data to create the contract
-        const jobToUpdate = jobs.find(job => job.id === jobId);
-        
-        if (!jobToUpdate) {
-          throw new Error('Job not found');
-        }
-        
-        console.log("Creating contract for job:", jobToUpdate);
-        
-        const contractData = {
-          job_id: jobId,
-          freelancer_id: updatedApplication.freelancer_id,
-          client_id: user!.id,
-          rate: updatedApplication.proposed_rate,
-          status: 'active' as 'active' | 'completed' | 'terminated',
-          start_date: new Date().toISOString()
-        };
-        
-        console.log("Contract data:", contractData);
-        
-        const newContract = await createContract(contractData);
-        
-        if (!newContract) {
-          throw new Error('Failed to create contract');
-        }
-        
-        console.log("Contract created successfully:", newContract);
-        
-        // Explicit update to job status to ensure it's set to in_progress
-        console.log("Explicitly updating job status to in_progress");
-        const updatedJob = await updateJobStatusDirectly(jobId, 'in_progress');
-        
-        if (!updatedJob) {
-          console.error("Failed to update job status directly");
-          throw new Error('Failed to update job status');
-        }
-        
-        console.log("Job status updated successfully:", updatedJob);
-        
-        // Special handling for the "Testing @1 am" job
-        if (jobToUpdate.title === "Testing @1 am") {
-          console.log("Special handling for Testing @1 am job");
-          await fixSpecificJob("Testing @1 am");
-        }
-        
-        toast({
-          title: "Application accepted",
-          description: "A contract has been created with this freelancer and the job status has been updated.",
-          variant: "default",
-        });
-      } else {
-        toast({
-          title: "Application rejected",
-          description: "The freelancer will be notified.",
-          variant: "default",
-        });
-      }
-      
       // Force immediate data refresh to show updated status
       await loadData();
       
@@ -159,12 +86,11 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
       if (onRefresh) {
         onRefresh();
       }
-      
     } catch (error) {
-      console.error('Error updating application status:', error);
+      console.error('Error updating data after status change:', error);
       toast({
         title: "Error",
-        description: `Failed to update application status: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Failed to refresh data: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     }

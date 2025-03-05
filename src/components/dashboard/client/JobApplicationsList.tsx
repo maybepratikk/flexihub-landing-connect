@@ -1,3 +1,4 @@
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -39,7 +40,19 @@ export function JobApplicationsList({
 
       console.log(`JobApplicationsList - Updating application ${applicationId} to ${status} for job ${jobId}`);
       
-      // First update the application status
+      // First check if this application is already processed
+      const application = applications.find(app => app.id === applicationId);
+      if (application && application.status !== 'pending') {
+        console.log(`Application ${applicationId} is already ${application.status}. Skipping update.`);
+        toast({
+          title: "No change needed",
+          description: `This application is already ${application.status}.`,
+          variant: "default",
+        });
+        return;
+      }
+      
+      // Update the application status
       const updatedApplication = await updateApplicationStatus(applicationId, status);
       
       if (!updatedApplication) {
