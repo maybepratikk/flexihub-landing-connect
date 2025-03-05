@@ -96,54 +96,130 @@ export async function getFreelancers(filters: {
   availability?: string;
   search: string;
 }) {
-  // Start with a base query to get all freelancer profiles
-  let query = supabase
-    .from('profiles')
-    .select(`
-      *,
-      freelancer_profiles(*)
-    `)
-    .eq('user_type', 'freelancer');
-
-  // Apply filters only if they are provided and not empty
-  if (filters.skills && filters.skills.length > 0) {
-    // Use a contains operator to check if any of the skills match
-    query = query.or(filters.skills.map(skill => 
-      `freelancer_profiles.skills.cs.{${skill}}`
-    ).join(','));
+  console.log('Fetching freelancers with filters:', filters);
+  
+  try {
+    // First, fetch all profiles that are freelancers
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_type', 'freelancer');
+    
+    if (profilesError) {
+      console.error('Error fetching freelancer profiles:', profilesError);
+      throw new Error(`Failed to fetch freelancer profiles: ${profilesError.message}`);
+    }
+    
+    if (!profilesData || profilesData.length === 0) {
+      console.log('No freelancer profiles found in the database.');
+      return [];
+    }
+    
+    console.log(`Found ${profilesData.length} freelancer profiles`);
+    
+    // Extract the IDs of all freelancer profiles
+    const freelancerIds = profilesData.map(profile => profile.id);
+    
+    // Now fetch all corresponding freelancer_profiles
+    let query = supabase
+      .from('freelancer_profiles')
+      .select('*');
+    
+    // Add in filter logic
+    if (freelancerIds.length > 0) {
+      query = query.in('id', freelancerIds);
+    }
+    
+    // Apply hourly rate filter if provided
+    if (filters.hourlyRate.min !== undefined) {
+      query = query.gte('hourly_rate', filters.hourlyRate.min);
+    }
+    if (filters.hourlyRate.max !== undefined) {
+      query = query.lte('hourly_rate', filters.hourlyRate.max);
+    }
+    
+    // Apply availability filter if provided
+    if (filters.availability) {
+      query = query.eq('availability', filters.availability);
+    }
+    
+    // Apply skills filter if provided
+    if (filters.skills && filters.skills.length > 0) {
+      // Use the containedBy operator for array overlap
+      // This is a more reliable way to check if the skills array contains any of the filter skills
+      const skillsConditions = filters.skills.map((skill, index) => 
+        `skills[${index}].ilike.%${skill}%`
+      );
+      
+      if (skillsConditions.length > 0) {
+        query = query.or(skillsConditions.join(','));
+      }
+    }
+    
+    const { data: freelancerProfilesData, error: freelancerProfilesError } = await query;
+    
+    if (freelancerProfilesError) {
+      console.error('Error fetching freelancer_profiles:', freelancerProfilesError);
+      throw new Error(`Failed to fetch freelancer_profiles: ${freelancerProfilesError.message}`);
+    }
+    
+    if (!freelancerProfilesData || freelancerProfilesData.length === 0) {
+      console.log('No freelancer_profiles data found.');
+      return [];
+    }
+    
+    console.log(`Found ${freelancerProfilesData.length} freelancer_profiles`);
+    
+    // Now join the data from profiles and freelancer_profiles
+    const combinedData = freelancerProfilesData.map(freelancerProfile => {
+      const matchingProfile = profilesData.find(profile => profile.id === freelancerProfile.id);
+      return {
+        ...matchingProfile,
+        freelancer_profiles: freelancerProfile
+      };
+    });
+    
+    // Apply search filter if provided
+    let filteredData = combinedData;
+    if (filters.search && filters.search.trim() !== '') {
+      const searchTerm = filters.search.toLowerCase();
+      filteredData = combinedData.filter(data => 
+        (data.full_name && data.full_name.toLowerCase().includes(searchTerm)) ||
+        (data.freelancer_profiles && 
+         data.freelancer_profiles.bio && 
+         data.freelancer_profiles.bio.toLowerCase().includes(searchTerm))
+      );
+    }
+    
+    // Apply experience filter if provided
+    if (filters.experience) {
+      if (filters.experience === 'entry') {
+        filteredData = filteredData.filter(data => 
+          data.freelancer_profiles && 
+          data.freelancer_profiles.years_experience !== null && 
+          data.freelancer_profiles.years_experience < 3
+        );
+      } else if (filters.experience === 'intermediate') {
+        filteredData = filteredData.filter(data => 
+          data.freelancer_profiles && 
+          data.freelancer_profiles.years_experience !== null && 
+          data.freelancer_profiles.years_experience >= 3 && 
+          data.freelancer_profiles.years_experience < 6
+        );
+      } else if (filters.experience === 'expert') {
+        filteredData = filteredData.filter(data => 
+          data.freelancer_profiles && 
+          data.freelancer_profiles.years_experience !== null && 
+          data.freelancer_profiles.years_experience >= 6
+        );
+      }
+    }
+    
+    console.log(`Returning ${filteredData.length} freelancers after applying all filters`);
+    return filteredData;
+    
+  } catch (error) {
+    console.error('Error in getFreelancers:', error);
+    throw error;
   }
-
-  // Apply hourly rate filter if provided
-  if (filters.hourlyRate.min !== undefined) {
-    query = query.gte('freelancer_profiles.hourly_rate', filters.hourlyRate.min);
-  }
-  if (filters.hourlyRate.max !== undefined) {
-    query = query.lte('freelancer_profiles.hourly_rate', filters.hourlyRate.max);
-  }
-
-  // Apply availability filter if provided
-  if (filters.availability) {
-    query = query.eq('freelancer_profiles.availability', filters.availability);
-  }
-
-  // Apply search filter if provided
-  if (filters.search && filters.search.trim() !== '') {
-    query = query.or(`full_name.ilike.%${filters.search}%, freelancer_profiles.bio.ilike.%${filters.search}%`);
-  }
-
-  console.log('Final query:', query);
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('Error fetching freelancers:', error);
-    throw new Error(`Failed to fetch freelancers: ${error.message}`);
-  }
-
-  // Filter out any profiles that don't have freelancer_profiles data
-  const validFreelancers = data?.filter(profile => 
-    profile.freelancer_profiles && Object.keys(profile.freelancer_profiles).length > 0
-  ) || [];
-
-  console.log('Fetched freelancers:', validFreelancers.length);
-  return validFreelancers;
 }
