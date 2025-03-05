@@ -90,6 +90,7 @@ const DashboardPage = () => {
 
   useEffect(() => {
     loadProfileData();
+    // Removed periodic refresh
   }, [loadProfileData]);
 
   // If not logged in, redirect to sign in

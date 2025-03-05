@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -65,14 +64,6 @@ export function FreelancerDashboard() {
   
   useEffect(() => {
     loadData();
-    
-    // Set up periodic refresh to ensure data is current
-    const intervalId = setInterval(() => {
-      console.log("FreelancerDashboard - Performing periodic refresh");
-      loadData();
-    }, 30000); // Refresh every 30 seconds
-    
-    return () => clearInterval(intervalId);
   }, [loadData]);
 
   const dismissNotification = (applicationId: string) => {

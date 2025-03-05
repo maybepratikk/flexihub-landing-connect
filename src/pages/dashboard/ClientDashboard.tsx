@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,15 +54,12 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
         }
       }
       
-      // Get client's jobs with a timestamp to force fresh data
-      const timestamp = new Date().toISOString();
-      console.log(`Fetching client jobs with timestamp: ${timestamp}`);
+      // Get client's jobs
       const clientJobs = await getClientJobs(user.id);
       console.log("Loaded client jobs:", clientJobs);
       setJobs(clientJobs);
       
-      // Get client's contracts with a timestamp to force fresh data
-      console.log(`Fetching client contracts with timestamp: ${timestamp}`);
+      // Get client's contracts
       const clientContracts = await getClientContracts(user.id);
       console.log("Loaded client contracts:", clientContracts);
       setContracts(clientContracts);
@@ -81,14 +77,6 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
   
   useEffect(() => {
     loadData();
-    
-    // Set up periodic refresh
-    const intervalId = setInterval(() => {
-      console.log("Performing periodic dashboard refresh");
-      loadData();
-    }, 10000); // Refresh every 10 seconds
-    
-    return () => clearInterval(intervalId);
   }, [loadData]);
 
   const handleUpdateApplicationStatus = async (jobId: string, applicationId: string, status: 'accepted' | 'rejected') => {
