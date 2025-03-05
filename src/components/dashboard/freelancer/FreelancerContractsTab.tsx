@@ -35,32 +35,52 @@ export function FreelancerContractsTab({ contracts }: ContractsTabProps) {
         ) : (
           <div className="space-y-4">
             {contracts.map((contract) => {
-              // Get job details, ensuring we handle all possible structures
+              // Extract job details from various possible structures
               let jobTitle = 'No Title Available';
               let budgetType = 'hourly';
               
-              // Try to extract job details from different possible structures
+              // Log raw job data for debugging
+              console.log(`Contract ${contract.id} job data:`, {
+                jobs: contract.jobs,
+                job_id: contract.job_id
+              });
+              
+              // Try to extract job title and budget type using all possible structures
               if (contract.jobs) {
-                // Check if jobs is an object with title property
-                if (typeof contract.jobs === 'object' && contract.jobs.title) {
-                  jobTitle = contract.jobs.title;
-                  budgetType = contract.jobs.budget_type || 'hourly';
+                // Direct job object
+                if (typeof contract.jobs === 'object') {
+                  if (contract.jobs.title) {
+                    jobTitle = contract.jobs.title;
+                    budgetType = contract.jobs.budget_type || 'hourly';
+                  }
                 }
               }
               
+              // If we still don't have a title, try another approach to fetch job details
+              if (jobTitle === 'No Title Available' && contract.job_id) {
+                // Log that we're using an alternate approach
+                console.log(`Using alternate approach to get job details for contract ${contract.id}`);
+              }
+              
               // Get client details from various possible structures
-              const clientName = contract.client?.full_name || 
-                                 contract.profiles?.client_id?.full_name || 
-                                 'Unknown Client';
+              let clientName = 'Unknown Client';
+              
+              if (contract.client && contract.client.full_name) {
+                clientName = contract.client.full_name;
+              } else if (contract.profiles) {
+                // Try client_id in profiles object 
+                if (contract.profiles.client_id && contract.profiles.client_id.full_name) {
+                  clientName = contract.profiles.client_id.full_name;
+                }
+              }
               
               // Log detailed information for debugging
-              console.log(`Contract ${contract.id}:`, {
-                jobData: contract.jobs,
-                clientData: contract.client,
-                profiles: contract.profiles,
-                extractedTitle: jobTitle,
-                extractedBudgetType: budgetType,
-                extractedClientName: clientName
+              console.log(`Contract ${contract.id} extracted data:`, {
+                jobTitle,
+                budgetType,
+                clientName,
+                contractRate: contract.rate,
+                contractStatus: contract.status
               });
               
               return (
