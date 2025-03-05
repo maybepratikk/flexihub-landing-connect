@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/contexts/AuthContext';
@@ -111,12 +112,20 @@ export default function ContractPage() {
   if (contract.profiles) {
     if (isClient) {
       // When viewing as client, get freelancer info (from freelancer_id key)
-      otherParty = contract.profiles.freelancer_id || contract.profiles;
+      otherParty = contract.profiles.freelancer_id || contract.profiles.freelancer || contract.profiles;
     } else {
       // When viewing as freelancer, get client info (from client_id key)
-      otherParty = contract.profiles.client_id || contract.profiles;
+      otherParty = contract.profiles.client_id || contract.profiles.client || contract.profiles;
     }
+  } else {
+    // Try to get profiles from separate properties
+    otherParty = isClient ? contract.freelancer : contract.client;
   }
+
+  // Log the contract data to see what we're working with
+  console.log("Contract data in ContractPage:", contract);
+  console.log("Job details in ContractPage:", jobDetails);
+  console.log("Other party in ContractPage:", otherParty);
 
   return (
     <div className="container mx-auto py-10">

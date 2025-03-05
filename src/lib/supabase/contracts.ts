@@ -37,9 +37,9 @@ export async function getClientContracts(clientId: string) {
       .from('contracts')
       .select(`
         *,
-        jobs!job_id(*),
-        profiles!freelancer_id(id, full_name, avatar_url, email),
-        freelancer_profiles!freelancer_id(*)
+        jobs:job_id(*),
+        profiles:freelancer_id(id, full_name, avatar_url, email),
+        freelancer_profiles:freelancer_id(*)
       `)
       .eq('client_id', clientId)
       .order('created_at', { ascending: false });
@@ -68,7 +68,7 @@ export async function getContractById(contractId: string) {
         jobs:job_id(*),
         client:profiles!client_id(id, full_name, avatar_url, email),
         freelancer:profiles!freelancer_id(id, full_name, avatar_url, email),
-        freelancer_profiles!freelancer_id(*)
+        freelancer_profiles:freelancer_id(*)
       `)
       .eq('id', contractId)
       .single();

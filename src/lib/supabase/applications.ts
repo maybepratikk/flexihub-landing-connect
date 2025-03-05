@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import type { JobApplication } from './types';
 
@@ -93,7 +92,7 @@ export async function getFreelancerApplications(userId: string) {
           category,
           duration
         ),
-        profiles:jobs!job_id(client_id(id, full_name, avatar_url, email))
+        profiles:jobs(client_id(id, full_name, avatar_url, email))
       `)
       .eq('freelancer_id', userId)
       .order('updated_at', { ascending: false });

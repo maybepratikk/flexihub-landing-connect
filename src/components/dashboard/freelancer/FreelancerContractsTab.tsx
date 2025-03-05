@@ -39,7 +39,7 @@ export function FreelancerContractsTab({ contracts }: ContractsTabProps) {
               const jobDetails = contract.jobs || {};
               
               // Get client details from the profiles field
-              const clientDetails = contract.profiles || {};
+              const clientDetails = contract.client || {};
               
               return (
                 <div key={contract.id} className="p-4 border rounded-lg">
