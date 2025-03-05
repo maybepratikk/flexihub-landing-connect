@@ -1,7 +1,9 @@
 
 export * from './client';
 export * from './types';
-export * from './profiles';
+export * from './userProfiles';
+export * from './clientProfiles';
+export * from './freelancerProfiles';
 export * from './jobs';
 export * from './applications';
 export * from './contracts';
