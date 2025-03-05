@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface ClientDashboardHeaderProps {
@@ -24,6 +24,9 @@ export function ClientDashboardHeader({ onRefresh }: ClientDashboardHeaderProps)
             Refresh
           </Button>
         )}
+        <Button variant="outline" onClick={() => navigate('/messages')}>
+          <MessageSquare className="mr-2 h-4 w-4" /> Messages
+        </Button>
         <Button onClick={() => navigate('/post-job')}>
           <Plus className="mr-2 h-4 w-4" /> Post a Job
         </Button>

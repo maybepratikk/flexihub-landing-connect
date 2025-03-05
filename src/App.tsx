@@ -23,6 +23,7 @@ import PostJobPage from './pages/PostJobPage';
 import OnboardingPage from './pages/OnboardingPage';
 import ContractPage from './pages/ContractPage';
 import FindTalentPage from './pages/FindTalentPage';
+import MessagesPage from './pages/MessagesPage';
 
 function App() {
   return (
@@ -70,6 +71,11 @@ function App() {
             <Route path="/contracts/:contractId" element={
               <ProtectedRoute>
                 <ContractPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/messages" element={
+              <ProtectedRoute>
+                <MessagesPage />
               </ProtectedRoute>
             } />
             <Route path="/find-talent" element={

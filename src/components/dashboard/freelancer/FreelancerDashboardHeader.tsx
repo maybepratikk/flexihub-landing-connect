@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { Search } from 'lucide-react';
+import { Search, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export function FreelancerDashboardHeader() {
@@ -14,9 +14,14 @@ export function FreelancerDashboardHeader() {
           Find jobs and manage your applications
         </p>
       </div>
-      <Button onClick={() => navigate('/jobs')}>
-        <Search className="mr-2 h-4 w-4" /> Find Jobs
-      </Button>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={() => navigate('/messages')}>
+          <MessageSquare className="mr-2 h-4 w-4" /> Messages
+        </Button>
+        <Button onClick={() => navigate('/jobs')}>
+          <Search className="mr-2 h-4 w-4" /> Find Jobs
+        </Button>
+      </div>
     </div>
   );
 }

@@ -6,7 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { 
   Menu,
   X,
-  ChevronDown
+  ChevronDown,
+  MessageSquare
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -114,33 +115,45 @@ export function Navbar() {
           {/* Desktop Auth Buttons or User Menu */}
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center space-x-2 hover-transition">
-                    <span>Account</span>
-                    <ChevronDown size={16} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5 text-sm font-medium">
-                    {user.email}
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/dashboard">Dashboard</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile">Profile</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/settings">Settings</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hover-transition"
+                  asChild
+                >
+                  <Link to="/messages" aria-label="Messages">
+                    <MessageSquare size={20} />
+                  </Link>
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center space-x-2 hover-transition">
+                      <span>Account</span>
+                      <ChevronDown size={16} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="px-2 py-1.5 text-sm font-medium">
+                      {user.email}
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/dashboard">Dashboard</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile">Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/settings">Settings</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             ) : (
               <>
                 <Button asChild variant="ghost" className="hover-transition">
@@ -185,6 +198,13 @@ export function Navbar() {
               <div className="pt-2 border-t border-gray-100">
                 {user ? (
                   <>
+                    <Link
+                      to="/messages"
+                      className="flex items-center py-2 text-foreground/80 hover:text-foreground"
+                    >
+                      <MessageSquare size={16} className="mr-2" />
+                      Messages
+                    </Link>
                     <Link
                       to="/dashboard"
                       className="block py-2 text-foreground/80 hover:text-foreground"

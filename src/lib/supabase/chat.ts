@@ -91,3 +91,46 @@ export async function getUnreadMessageCount(contractId: string, userId: string) 
   
   return count || 0;
 }
+
+export async function getContractsWithMessages(userId: string) {
+  // Get all contracts where the user is either client or freelancer
+  const { data: contracts, error: contractsError } = await supabase
+    .from('contracts')
+    .select(`
+      *,
+      client:profiles!contracts_client_id_fkey(id, full_name, avatar_url),
+      freelancer:profiles!contracts_freelancer_id_fkey(id, full_name, avatar_url),
+      jobs(title)
+    `)
+    .or(`client_id.eq.${userId},freelancer_id.eq.${userId}`)
+    .order('created_at', { ascending: false });
+  
+  if (contractsError) {
+    console.error('Error fetching contracts:', contractsError);
+    return [];
+  }
+  
+  // For each contract, get the last message
+  const contractsWithLastMessage = await Promise.all(
+    contracts.map(async (contract) => {
+      const { data: lastMessage, error: messageError } = await supabase
+        .from('chat_messages')
+        .select('message, created_at, sender_id')
+        .eq('contract_id', contract.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (messageError && messageError.code !== 'PGRST116') { // PGRST116 is the error code for no rows returned
+        console.error(`Error fetching last message for contract ${contract.id}:`, messageError);
+      }
+      
+      return {
+        ...contract,
+        last_message: lastMessage || null
+      };
+    })
+  );
+  
+  return contractsWithLastMessage;
+}
