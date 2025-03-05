@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getUserProfile, updateUserProfile } from '@/lib/supabase/userProfiles';
+import { FreelancerProfile } from '@/lib/supabase/types';
 
 // Define the form schema
 const profileFormSchema = z.object({
@@ -38,6 +39,7 @@ export default function FreelancerProfilePage() {
   const [loading, setLoading] = useState(true);
   const [skillsInput, setSkillsInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [profileData, setProfileData] = useState<any>(null);
 
   // Initialize form with default values
   const form = useForm<ProfileFormValues>({
@@ -62,16 +64,21 @@ export default function FreelancerProfilePage() {
       setLoading(true);
       try {
         console.log("Fetching freelancer profile for user:", user.id);
-        const profileData = await getUserProfile(user.id);
-        console.log("Fetched profile data:", profileData);
+        const data = await getUserProfile(user.id);
+        console.log("Fetched profile data:", data);
+        
+        setProfileData(data);
 
-        if (profileData?.freelancer_profile) {
-          const freelancerData = profileData.freelancer_profile;
+        if (data?.freelancer_profile) {
+          const freelancerData = data.freelancer_profile;
           
           // Convert skills string to array if needed
-          const skills = Array.isArray(freelancerData.skills) 
-            ? freelancerData.skills 
-            : (freelancerData.skills ? [freelancerData.skills] : []);
+          let skills: string[] = [];
+          if (Array.isArray(freelancerData.skills)) {
+            skills = freelancerData.skills;
+          } else if (freelancerData.skills) {
+            skills = [freelancerData.skills];
+          }
           
           form.reset({
             hourly_rate: freelancerData.hourly_rate || 0,
@@ -83,6 +90,11 @@ export default function FreelancerProfilePage() {
             portfolio_url: freelancerData.portfolio_url || '',
             education: freelancerData.education || '',
           });
+        } else if (!data) {
+          // If no profile data, navigate to onboarding
+          console.log("No profile data found, navigating to onboarding");
+          navigate('/onboarding');
+          return;
         }
       } catch (error) {
         console.error("Error fetching freelancer profile:", error);
@@ -97,7 +109,7 @@ export default function FreelancerProfilePage() {
     }
 
     fetchUserProfile();
-  }, [user, form, toast]);
+  }, [user, form, toast, navigate]);
 
   const handleAddSkill = () => {
     if (!skillsInput.trim()) return;
@@ -121,17 +133,19 @@ export default function FreelancerProfilePage() {
     try {
       console.log("Updating freelancer profile with values:", values);
       
+      const freelancerProfile: FreelancerProfile = {
+        hourly_rate: values.hourly_rate,
+        years_experience: values.years_experience,
+        title: values.title,
+        bio: values.bio,
+        skills: values.skills,
+        availability: values.availability,
+        portfolio_url: values.portfolio_url || null,
+        education: values.education || null,
+      };
+      
       const updatedProfile = await updateUserProfile(user.id, {
-        freelancer_profile: {
-          hourly_rate: values.hourly_rate,
-          years_experience: values.years_experience,
-          title: values.title,
-          bio: values.bio,
-          skills: values.skills,
-          availability: values.availability,
-          portfolio_url: values.portfolio_url || null,
-          education: values.education || null,
-        }
+        freelancer_profile: freelancerProfile
       });
       
       if (updatedProfile) {

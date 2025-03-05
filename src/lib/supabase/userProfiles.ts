@@ -1,6 +1,6 @@
 
 import { supabase } from './client';
-import type { User } from './types';
+import type { User, FreelancerProfile, ClientProfile } from './types';
 
 export async function getUserProfile(userId: string) {
   try {
@@ -9,8 +9,8 @@ export async function getUserProfile(userId: string) {
       .from('profiles')
       .select(`
         *,
-        freelancer_profile(*),
-        client_profile(*)
+        freelancer_profile:freelancer_profiles(*),
+        client_profile:client_profiles(*)
       `)
       .eq('id', userId)
       .maybeSingle();

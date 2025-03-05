@@ -13,6 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getUserProfile, updateUserProfile } from '@/lib/supabase/userProfiles';
+import { ClientProfile } from '@/lib/supabase/types';
 
 // Define the form schema
 const clientProfileSchema = z.object({
@@ -32,6 +33,7 @@ export default function ClientProfilePage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [profileData, setProfileData] = useState<any>(null);
 
   // Initialize form with default values
   const form = useForm<ClientProfileFormValues>({
@@ -53,11 +55,13 @@ export default function ClientProfilePage() {
       setLoading(true);
       try {
         console.log("Fetching client profile for user:", user.id);
-        const profileData = await getUserProfile(user.id);
-        console.log("Fetched profile data:", profileData);
+        const data = await getUserProfile(user.id);
+        console.log("Fetched profile data:", data);
+        
+        setProfileData(data);
 
-        if (profileData?.client_profile) {
-          const clientData = profileData.client_profile;
+        if (data?.client_profile) {
+          const clientData = data.client_profile;
           form.reset({
             company_name: clientData.company_name || '',
             industry: clientData.industry || '',
@@ -65,6 +69,11 @@ export default function ClientProfilePage() {
             company_description: clientData.company_description || '',
             website: clientData.website || '',
           });
+        } else if (!data) {
+          // If no profile data, navigate to onboarding
+          console.log("No profile data found, navigating to onboarding");
+          navigate('/onboarding');
+          return;
         }
       } catch (error) {
         console.error("Error fetching client profile:", error);
@@ -79,7 +88,7 @@ export default function ClientProfilePage() {
     }
 
     fetchUserProfile();
-  }, [user, form, toast]);
+  }, [user, form, toast, navigate]);
 
   const onSubmit = async (values: ClientProfileFormValues) => {
     if (!user) return;
@@ -88,14 +97,16 @@ export default function ClientProfilePage() {
     try {
       console.log("Updating client profile with values:", values);
       
+      const clientProfile: ClientProfile = {
+        company_name: values.company_name,
+        industry: values.industry,
+        company_size: values.company_size,
+        company_description: values.company_description,
+        website: values.website || null,
+      };
+      
       const updatedProfile = await updateUserProfile(user.id, {
-        client_profile: {
-          company_name: values.company_name,
-          industry: values.industry,
-          company_size: values.company_size,
-          company_description: values.company_description,
-          website: values.website || null,
-        }
+        client_profile: clientProfile
       });
       
       if (updatedProfile) {

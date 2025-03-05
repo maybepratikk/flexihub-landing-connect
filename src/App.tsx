@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -122,7 +121,8 @@ function ProfileRouter() {
     return <Navigate to="/signin" replace />;
   }
   
-  const userType = user.user_metadata?.user_type;
+  // Get user type from user metadata or from the user object directly
+  const userType = user.user_metadata?.user_type || user.user_type;
   
   if (userType === 'freelancer') {
     return <FreelancerProfilePage />;

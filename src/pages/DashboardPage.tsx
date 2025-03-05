@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { getUserProfile, supabase } from '@/lib/supabase';
+import { getUserProfile } from '@/lib/supabase/userProfiles';
 import { Loader2 } from 'lucide-react';
 import { FreelancerDashboard } from './dashboard/FreelancerDashboard';
 import { ClientDashboard } from './dashboard/ClientDashboard';
@@ -14,7 +14,7 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [detailedProfile, setDetailedProfile] = useState<any>(null);
+  const [shouldRedirectToOnboarding, setShouldRedirectToOnboarding] = useState(false);
 
   const loadProfileData = useCallback(async () => {
     if (!user) {
@@ -26,89 +26,30 @@ const DashboardPage = () => {
     try {
       console.log("DashboardPage - Loading profile data for user:", user.id);
       
-      // Get basic profile info
-      // First try from the user metadata
-      const userType = user.user_metadata?.user_type;
-      console.log("User metadata from auth:", user.user_metadata);
+      // Get profile from database
+      const profileData = await getUserProfile(user.id);
+      console.log("Profile from database:", profileData);
       
-      // Then try from the profiles table
-      let basicProfile = await getUserProfile(user.id);
-      console.log("Profile from database:", basicProfile);
-      
-      // If profile doesn't exist in database but we have user metadata, create the profile
-      if (!basicProfile && userType) {
-        console.log("Creating missing profile with type:", userType);
-        const { data, error } = await supabase
-          .from('profiles')
-          .upsert({
-            id: user.id,
-            email: user.email,
-            full_name: user.user_metadata?.full_name,
-            user_type: userType,
-          }, { onConflict: 'id' });
-          
-        if (error) {
-          console.error("Error creating profile:", error);
+      if (profileData) {
+        setProfile(profileData);
+        
+        // Check if detailed profile exists based on user type
+        const needsOnboarding = (
+          (profileData.user_type === 'freelancer' && !profileData.freelancer_profile) ||
+          (profileData.user_type === 'client' && !profileData.client_profile)
+        );
+        
+        if (needsOnboarding) {
+          console.log("User needs onboarding, redirecting...");
+          setShouldRedirectToOnboarding(true);
         } else {
-          // Fetch the profile again
-          basicProfile = await getUserProfile(user.id);
+          console.log("User has complete profile, showing dashboard");
+          setShouldRedirectToOnboarding(false);
         }
-      }
-      
-      console.log("DashboardPage - Basic profile loaded:", basicProfile);
-      setProfile(basicProfile);
-      
-      if (basicProfile) {
-        // Get detailed profile based on user type
-        if (basicProfile.user_type === 'freelancer') {
-          console.log("DashboardPage - Loading freelancer profile");
-          const { data, error } = await supabase
-            .from('freelancer_profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-          
-          if (error) {
-            console.error("Error loading freelancer profile:", error);
-            if (error.code === 'PGRST116') {
-              // No rows found
-              setDetailedProfile(null);
-            } else {
-              throw error;
-            }
-          } else {
-            console.log("DashboardPage - Freelancer profile loaded:", data);
-            setDetailedProfile(data);
-          }
-        } else if (basicProfile.user_type === 'client') {
-          console.log("DashboardPage - Loading client profile");
-          const { data, error } = await supabase
-            .from('client_profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-          
-          if (error) {
-            console.error("Error loading client profile:", error);
-            if (error.code === 'PGRST116') {
-              // No rows found
-              setDetailedProfile(null);
-            } else {
-              throw error;
-            }
-          } else {
-            console.log("DashboardPage - Client profile loaded:", data);
-            setDetailedProfile(data);
-          }
-        }
-      } else if (userType) {
-        // Use the user metadata if database profile not available
-        setProfile({
-          id: user.id,
-          email: user.email,
-          full_name: user.user_metadata?.full_name,
-          user_type: userType
-        });
+      } else {
+        // No profile found at all, redirect to onboarding
+        console.log("No profile found, redirecting to onboarding");
+        setShouldRedirectToOnboarding(true);
       }
     } catch (error: any) {
       console.error('Error loading profile data:', error);
@@ -132,8 +73,8 @@ const DashboardPage = () => {
     return <Navigate to="/signin" replace />;
   }
 
-  // If profile exists but detailed profile doesn't, redirect to onboarding
-  if (!loading && profile && !detailedProfile) {
+  // If profile needs onboarding, redirect once (not in a loop)
+  if (!loading && shouldRedirectToOnboarding) {
     return <Navigate to="/onboarding" replace />;
   }
 
