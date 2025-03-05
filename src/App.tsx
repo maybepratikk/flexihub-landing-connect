@@ -1,5 +1,5 @@
 
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from './contexts/AuthContext';
 
@@ -30,14 +30,18 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          {/* Public routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/verify" element={<VerificationSentPage />} />
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
+          {/* Routes with main layout */}
           <Route element={<MainLayout />}>
             <Route path="/home" element={<HomePage />} />
+            
+            {/* Protected routes */}
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <DashboardPage />
@@ -78,6 +82,8 @@ function App() {
                 <MessagesPage />
               </ProtectedRoute>
             } />
+            
+            {/* Role-specific routes */}
             <Route path="/find-talent" element={
               <ClientRoute>
                 <FindTalentPage />
@@ -88,6 +94,8 @@ function App() {
                 <JobsPage />
               </FreelancerRoute>
             } />
+            
+            {/* Fallback route */}
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

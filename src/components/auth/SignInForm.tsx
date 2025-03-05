@@ -14,8 +14,14 @@ export function SignInForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, session } = useAuth();
   const navigate = useNavigate();
+
+  // If user is already logged in, redirect to dashboard
+  if (session) {
+    navigate('/dashboard', { replace: true });
+    return null;
+  }
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +29,7 @@ export function SignInForm() {
     
     try {
       await signIn(email, password);
-      navigate('/dashboard');
+      // Note: The redirect happens in the signIn function now
     } catch (error) {
       console.error('Error in form submission:', error);
     } finally {

@@ -30,27 +30,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Initial session fetch
     const fetchSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('Error fetching session:', error);
-        toast({
-          title: "Authentication Error",
-          description: "There was a problem connecting to the authentication service.",
-          variant: "destructive",
-        });
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error fetching session:', error);
+          toast({
+            title: "Authentication Error",
+            description: "There was a problem connecting to the authentication service.",
+            variant: "destructive",
+          });
+        } else {
+          console.log('Initial session fetch:', session);
+          setSession(session);
+          setUser(session?.user as ExtendedUser ?? null);
+        }
+      } catch (err) {
+        console.error('Exception in fetchSession:', err);
+      } finally {
+        setLoading(false);
       }
-      
-      setSession(session);
-      setUser(session?.user as ExtendedUser ?? null);
-      setLoading(false);
     };
 
     fetchSession();
 
+    // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('Auth state changed:', _event);
+      console.log('Auth state changed:', _event, session?.user?.id);
       setSession(session);
       setUser(session?.user as ExtendedUser ?? null);
       setLoading(false);
@@ -101,17 +109,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
       
+      console.log("Sign in successful, session:", data.session);
+      
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
+      
+      // Navigate to dashboard after successful sign in
+      window.location.href = '/dashboard';
     } catch (error: any) {
       toast({
         title: "Error signing in",
