@@ -24,6 +24,8 @@ import OnboardingPage from './pages/OnboardingPage';
 import ContractPage from './pages/ContractPage';
 import FindTalentPage from './pages/FindTalentPage';
 import MessagesPage from './pages/MessagesPage';
+import FreelancerProfilePage from './pages/FreelancerProfilePage';
+import ClientProfilePage from './pages/ClientProfilePage';
 
 function App() {
   return (
@@ -83,6 +85,13 @@ function App() {
               </ProtectedRoute>
             } />
             
+            {/* Profile routes */}
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <ProfileRouter />
+              </ProtectedRoute>
+            } />
+            
             {/* Role-specific routes */}
             <Route path="/find-talent" element={
               <ClientRoute>
@@ -103,6 +112,26 @@ function App() {
       </AuthProvider>
     </BrowserRouter>
   );
+}
+
+// Profile Router component to direct to the correct profile page based on user type
+function ProfileRouter() {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <Navigate to="/signin" replace />;
+  }
+  
+  const userType = user.user_metadata?.user_type;
+  
+  if (userType === 'freelancer') {
+    return <FreelancerProfilePage />;
+  } else if (userType === 'client') {
+    return <ClientProfilePage />;
+  } else {
+    // Fallback for users without a specified type
+    return <Navigate to="/dashboard" replace />;
+  }
 }
 
 export default App;
