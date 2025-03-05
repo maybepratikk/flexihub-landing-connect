@@ -7,6 +7,7 @@ import { MainLayout } from './components/layout/MainLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ClientRoute } from './components/auth/ClientRoute';
 import { FreelancerRoute } from './components/auth/FreelancerRoute';
+import { AdminRoute } from './components/auth/AdminRoute';
 
 import LandingPage from './pages/LandingPage';
 import HomePage from './pages/HomePage';
@@ -24,6 +25,7 @@ import OnboardingPage from './pages/OnboardingPage';
 import ContractPage from './pages/ContractPage';
 import FindTalentPage from './pages/FindTalentPage';
 import MessagesPage from './pages/MessagesPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 
 function App() {
   return (
@@ -42,6 +44,11 @@ function App() {
               <ProtectedRoute>
                 <DashboardPage />
               </ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <AdminRoute>
+                <AdminDashboardPage />
+              </AdminRoute>
             } />
             <Route path="/jobs" element={
               <ProtectedRoute>

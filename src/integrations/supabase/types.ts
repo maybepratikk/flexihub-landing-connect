@@ -9,6 +9,35 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_access: {
+        Row: {
+          access_level: string
+          admin_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          access_level?: string
+          admin_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          access_level?: string
+          admin_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_access_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           contract_id: string | null
