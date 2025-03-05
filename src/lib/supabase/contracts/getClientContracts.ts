@@ -21,7 +21,21 @@ export async function getClientContracts(clientId: string) {
       throw error;
     }
     
-    console.log(`Retrieved ${data?.length || 0} contracts for client ${clientId}:`, data);
+    // Ensure we return unique contracts by ID
+    if (data && data.length > 0) {
+      const uniqueContracts = Array.from(
+        new Map(data.map(contract => [contract.id, contract])).values()
+      );
+      
+      if (uniqueContracts.length !== data.length) {
+        console.log(`Deduplicated ${data.length - uniqueContracts.length} contracts from database query`);
+      }
+      
+      console.log(`Retrieved ${uniqueContracts.length} unique contracts for client ${clientId}`);
+      return uniqueContracts;
+    }
+    
+    console.log(`Retrieved ${data?.length || 0} contracts for client ${clientId}`);
     return data || [];
   } catch (error) {
     console.error('Error in getClientContracts:', error);

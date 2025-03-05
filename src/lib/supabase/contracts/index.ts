@@ -5,3 +5,4 @@ export * from './getClientContracts';
 export * from './getContractById';
 export * from './createContract';
 export * from './updateContractStatus';
+export * from './checkExistingContract';

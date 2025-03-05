@@ -56,10 +56,20 @@ export function ClientDashboard({ onRefresh }: ClientDashboardProps) {
       console.log("Loaded client jobs:", clientJobs);
       setJobs(clientJobs);
       
-      // Get client's contracts
+      // Get client's contracts - make sure we're getting unique contracts
       const clientContracts = await getClientContracts(user.id);
       console.log("Loaded client contracts:", clientContracts);
-      setContracts(clientContracts);
+      
+      // Deduplicate contracts by id to ensure no duplicates are displayed
+      const uniqueContracts = Array.from(
+        new Map(clientContracts.map(contract => [contract.id, contract])).values()
+      );
+      
+      if (uniqueContracts.length !== clientContracts.length) {
+        console.log(`Removed ${clientContracts.length - uniqueContracts.length} duplicate contracts`);
+      }
+      
+      setContracts(uniqueContracts);
     } catch (error) {
       console.error('Error loading client dashboard data:', error);
       toast({

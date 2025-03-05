@@ -9,7 +9,8 @@ import {
   createContract, 
   updateJobStatus,
   updateJobStatusDirectly,
-  fixSpecificJob
+  fixSpecificJob,
+  checkExistingContract
 } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -63,25 +64,44 @@ export function JobApplicationsList({
 
       // If the application was accepted, create a contract and explicitly update job status
       if (status === 'accepted') {
-        console.log('Application accepted, creating contract');
+        console.log('Application accepted, checking for existing contract');
         
-        const contractData = {
-          job_id: jobId,
-          freelancer_id: applicantId,
-          client_id: user.id,
-          rate: rate,
-          status: 'active' as const
-        };
+        // Check if a contract already exists for this job and freelancer
+        const existingContract = await checkExistingContract(jobId, applicantId);
         
-        console.log('Contract data for creation:', contractData);
-        
-        const newContract = await createContract(contractData);
-        
-        if (!newContract) {
-          throw new Error('Failed to create contract');
+        if (existingContract) {
+          console.log('Contract already exists:', existingContract);
+          toast({
+            title: "Contract exists",
+            description: "A contract already exists for this job and freelancer.",
+            variant: "default",
+          });
+        } else {
+          console.log('No existing contract found, creating a new one');
+          const contractData = {
+            job_id: jobId,
+            freelancer_id: applicantId,
+            client_id: user.id,
+            rate: rate,
+            status: 'active' as const
+          };
+          
+          console.log('Contract data for creation:', contractData);
+          
+          const newContract = await createContract(contractData);
+          
+          if (!newContract) {
+            throw new Error('Failed to create contract');
+          }
+          
+          console.log('Contract created successfully:', newContract);
+          
+          toast({
+            title: "Application accepted",
+            description: "A contract has been created with this freelancer and the job status has been updated.",
+            variant: "default",
+          });
         }
-        
-        console.log('Contract created successfully:', newContract);
         
         // Explicitly update job status to in_progress to ensure it happens
         console.log('Explicitly updating job status to in_progress');
@@ -99,12 +119,6 @@ export function JobApplicationsList({
           console.log("Special handling for Testing @1 am job");
           await fixSpecificJob("Testing @1 am");
         }
-        
-        toast({
-          title: "Application accepted",
-          description: "A contract has been created with this freelancer and the job status has been updated.",
-          variant: "default",
-        });
       } else {
         toast({
           title: "Application rejected",
@@ -142,7 +156,7 @@ export function JobApplicationsList({
         <div className="space-y-4">
           {applications.map((application) => (
             <div key={application.id} className="bg-background p-4 rounded-md border">
-              <div className="flex justify-between">
+              <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3">
                   {application.profiles && (
                     <Avatar>
