@@ -9,14 +9,11 @@ import { UserManagementTable } from '@/components/dashboard/admin/UserManagement
 import { JobManagementTable } from '@/components/dashboard/admin/JobManagementTable';
 import { ContractManagementTable } from '@/components/dashboard/admin/ContractManagementTable';
 import { getAllUsers, getAllJobs, getAllApplications, getAllContracts } from '@/lib/supabase/admin';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle } from 'lucide-react';
 
 export function AdminDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
@@ -26,38 +23,26 @@ export function AdminDashboard() {
     if (!user) return;
     
     setLoading(true);
-    setError(null);
-    
     try {
       console.log("Loading admin dashboard data");
       
       // Get all users
       const allUsers = await getAllUsers();
       setUsers(allUsers);
-      console.log("Users loaded:", allUsers.length);
       
       // Get all jobs
       const allJobs = await getAllJobs();
       setJobs(allJobs);
-      console.log("Jobs loaded:", allJobs.length);
       
       // Get all applications
       const allApplications = await getAllApplications();
       setApplications(allApplications);
-      console.log("Applications loaded:", allApplications.length);
       
       // Get all contracts
       const allContracts = await getAllContracts();
       setContracts(allContracts);
-      console.log("Contracts loaded:", allContracts.length);
-      
-      toast({
-        title: "Dashboard Updated",
-        description: "Admin dashboard data has been refreshed",
-      });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error loading admin dashboard data:', error);
-      setError(error.message || "Failed to load dashboard data");
       toast({
         title: "Error",
         description: "Failed to load dashboard data. Please try again.",
@@ -74,8 +59,6 @@ export function AdminDashboard() {
 
   // Calculate statistics
   const totalUsers = users.length;
-  const clientUsers = users.filter(u => u.user_type === 'client').length;
-  const freelancerUsers = users.filter(u => u.user_type === 'freelancer').length;
   const totalJobs = jobs.length;
   const totalApplications = applications.length;
   const totalContracts = contracts.length;
@@ -86,20 +69,8 @@ export function AdminDashboard() {
     <div className="space-y-8">
       <AdminDashboardHeader onRefresh={loadData} />
       
-      {error && (
-        <div className="bg-destructive/10 p-4 rounded-md flex items-center gap-2 text-destructive">
-          <AlertTriangle size={18} />
-          <p>{error}</p>
-          <Button variant="outline" size="sm" onClick={loadData} className="ml-auto">
-            Retry
-          </Button>
-        </div>
-      )}
-      
       <AdminStatsCards 
         totalUsers={totalUsers}
-        clientUsers={clientUsers}
-        freelancerUsers={freelancerUsers}
         totalJobs={totalJobs}
         totalApplications={totalApplications}
         totalContracts={totalContracts}

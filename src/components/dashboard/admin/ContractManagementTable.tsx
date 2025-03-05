@@ -19,8 +19,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Search, ExternalLink } from 'lucide-react';
-import { Contract } from '@/lib/supabase/types';
+import { MoreHorizontal, Search } from 'lucide-react';
+
+interface Contract {
+  id: string;
+  job_id: string;
+  freelancer_id: string;
+  client_id: string;
+  rate: number;
+  status: string;
+  start_date?: string;
+  end_date?: string;
+  created_at?: string;
+  jobs?: {
+    title?: string;
+  }
+}
 
 interface ContractManagementTableProps {
   contracts: Contract[];
@@ -33,9 +47,7 @@ export function ContractManagementTable({ contracts, loading = false }: Contract
   const filteredContracts = contracts.filter(contract => 
     contract.jobs?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     contract.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contract.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contract.client?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contract.freelancer?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    contract.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -54,7 +66,7 @@ export function ContractManagementTable({ contracts, loading = false }: Contract
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search contracts by job title, client, freelancer..."
+            placeholder="Search contracts..."
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -67,18 +79,17 @@ export function ContractManagementTable({ contracts, loading = false }: Contract
           <TableHeader>
             <TableRow>
               <TableHead>Job Title</TableHead>
-              <TableHead>Freelancer</TableHead>
-              <TableHead>Client</TableHead>
               <TableHead>Rate</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Start Date</TableHead>
+              <TableHead>End Date</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredContracts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   No contracts found
                 </TableCell>
               </TableRow>
@@ -88,8 +99,6 @@ export function ContractManagementTable({ contracts, loading = false }: Contract
                   <TableCell className="font-medium">
                     {contract.jobs?.title || 'Unknown Job'}
                   </TableCell>
-                  <TableCell>{contract.freelancer?.full_name || 'Unknown Freelancer'}</TableCell>
-                  <TableCell>{contract.client?.full_name || 'Unknown Client'}</TableCell>
                   <TableCell>${contract.rate}</TableCell>
                   <TableCell>
                     <Badge variant={
@@ -103,6 +112,7 @@ export function ContractManagementTable({ contracts, loading = false }: Contract
                     </Badge>
                   </TableCell>
                   <TableCell>{contract.start_date ? new Date(contract.start_date).toLocaleDateString() : 'Unknown'}</TableCell>
+                  <TableCell>{contract.end_date ? new Date(contract.end_date).toLocaleDateString() : 'Ongoing'}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -113,10 +123,7 @@ export function ContractManagementTable({ contracts, loading = false }: Contract
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          <a href={`/contracts/${contract.id}`} className="w-full">View Details</a>
-                        </DropdownMenuItem>
+                        <DropdownMenuItem>View Details</DropdownMenuItem>
                         <DropdownMenuItem>View Messages</DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-red-600">Terminate Contract</DropdownMenuItem>
