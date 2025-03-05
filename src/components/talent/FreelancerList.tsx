@@ -4,6 +4,8 @@ import { getFreelancers } from "@/lib/supabase/freelancerProfiles";
 import { FreelancerCard } from "./FreelancerCard";
 import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { mockFreelancers } from "@/lib/mock/freelancers";
+import { toast } from "@/hooks/use-toast";
 
 interface FreelancerListProps {
   filters: {
@@ -19,6 +21,7 @@ export function FreelancerList({ filters }: FreelancerListProps) {
   const [freelancers, setFreelancers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [useMockData, setUseMockData] = useState(false);
 
   useEffect(() => {
     async function fetchFreelancers() {
@@ -28,10 +31,24 @@ export function FreelancerList({ filters }: FreelancerListProps) {
         console.log("Fetching freelancers with filters:", filters);
         const data = await getFreelancers(filters);
         console.log("Fetched freelancers:", data);
-        setFreelancers(data);
+        
+        if (data && data.length > 0) {
+          setFreelancers(data);
+        } else {
+          console.log("No freelancers found in database, using mock data");
+          toast({
+            title: "Using demo data",
+            description: "No freelancers found in database, displaying demo data instead",
+            duration: 5000,
+          });
+          setFreelancers(mockFreelancers);
+          setUseMockData(true);
+        }
       } catch (error: any) {
         console.error("Error fetching freelancers:", error);
-        setError(error.message || "Failed to load freelancers");
+        setError("Failed to load freelancers from database, using mock data");
+        setFreelancers(mockFreelancers);
+        setUseMockData(true);
       } finally {
         setLoading(false);
       }
@@ -51,7 +68,7 @@ export function FreelancerList({ filters }: FreelancerListProps) {
 
   if (error) {
     return (
-      <Alert variant="destructive" className="my-4">
+      <Alert variant={useMockData ? "default" : "destructive"} className="my-4">
         <AlertDescription>{error}</AlertDescription>
       </Alert>
     );
