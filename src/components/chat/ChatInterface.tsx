@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { 
   sendChatMessage, 
@@ -10,11 +11,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
-import { Send } from 'lucide-react';
+import { Send, Image, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNotification } from '@/contexts/NotificationContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ChatInterfaceProps {
   contractId: string;
@@ -27,9 +29,16 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { showMessageNotification } = useNotification();
+  const { user } = useAuth();
+  
+  // Check if user is a freelancer
+  const isFreelancer = user?.user_type === 'freelancer';
   
   useEffect(() => {
     localStorage.setItem('currentUserId', currentUserId);
@@ -106,12 +115,19 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
   }, [messages]);
   
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || sending) return;
+    if ((!newMessage.trim() && !selectedImage) || sending) return;
     
     try {
       setSending(true);
+      const messageText = newMessage.trim();
       setNewMessage('');
-      const sentMessage = await sendChatMessage(contractId, currentUserId, newMessage.trim());
+      
+      // Clear image preview after sending
+      const imageToSend = selectedImage;
+      setSelectedImage(null);
+      setPreviewUrl(null);
+      
+      const sentMessage = await sendChatMessage(contractId, currentUserId, messageText, imageToSend);
       
       if (!sentMessage) {
         throw new Error("Failed to send message");
@@ -132,6 +148,52 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check if file is an image
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please select an image file.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Check file size (limit to 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image smaller than 5MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setSelectedImage(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  const handleImageButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+  
+  const clearSelectedImage = () => {
+    setSelectedImage(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
   
@@ -161,6 +223,24 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
         )}
       </ScrollArea>
       
+      {previewUrl && (
+        <div className="p-2 border-t">
+          <div className="relative inline-block">
+            <img 
+              src={previewUrl} 
+              alt="Preview" 
+              className="h-20 w-auto rounded-md object-cover"
+            />
+            <button
+              className="absolute top-0 right-0 bg-foreground/10 hover:bg-foreground/20 rounded-full p-0.5 transform translate-x-1/2 -translate-y-1/2"
+              onClick={clearSelectedImage}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+      
       <div className="p-4 border-t">
         <div className="flex items-center space-x-2">
           <Input
@@ -171,7 +251,33 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
             className="flex-grow"
             disabled={sending}
           />
-          <Button size="icon" onClick={handleSendMessage} disabled={!newMessage.trim() || sending}>
+          
+          {isFreelancer && (
+            <>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+              <Button 
+                size="icon" 
+                variant="outline" 
+                onClick={handleImageButtonClick}
+                disabled={sending}
+                title="Send an image"
+              >
+                <Image className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+          
+          <Button 
+            size="icon" 
+            onClick={handleSendMessage} 
+            disabled={(!newMessage.trim() && !selectedImage) || sending}
+          >
             <Send className="h-4 w-4" />
           </Button>
         </div>
@@ -213,7 +319,20 @@ function MessageBubble({ message, isCurrentUser }: MessageBubbleProps) {
             ? 'bg-primary text-primary-foreground' 
             : 'bg-muted'
         }`}>
-          <div className="break-words whitespace-pre-wrap">{message.message}</div>
+          {message.image_url && (
+            <a href={message.image_url} target="_blank" rel="noopener noreferrer" className="block mb-2">
+              <img 
+                src={message.image_url} 
+                alt="Shared image" 
+                className="rounded-md max-w-full max-h-60 object-contain"
+              />
+            </a>
+          )}
+          
+          {message.message && (
+            <div className="break-words whitespace-pre-wrap">{message.message}</div>
+          )}
+          
           <div className={`text-xs mt-1 ${
             isCurrentUser ? 'text-primary-foreground/70' : 'text-muted-foreground'
           }`}>

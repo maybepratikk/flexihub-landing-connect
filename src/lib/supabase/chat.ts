@@ -3,13 +3,44 @@ import { supabase } from './client';
 import type { ChatMessage } from './types';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
-export async function sendChatMessage(contractId: string, senderId: string, message: string) {
+export async function sendChatMessage(contractId: string, senderId: string, message: string, imageFile?: File) {
+  let imageUrl = null;
+  
+  // Upload image if provided
+  if (imageFile) {
+    const fileExt = imageFile.name.split('.').pop();
+    const fileName = `${contractId}/${senderId}-${Date.now()}.${fileExt}`;
+    
+    // Upload to storage
+    const { data: uploadData, error: uploadError } = await supabase
+      .storage
+      .from('chat_images')
+      .upload(fileName, imageFile);
+    
+    if (uploadError) {
+      console.error('Error uploading image:', uploadError);
+      return null;
+    }
+    
+    // Get public URL
+    const { data: urlData } = await supabase
+      .storage
+      .from('chat_images')
+      .getPublicUrl(fileName);
+    
+    if (urlData) {
+      imageUrl = urlData.publicUrl;
+    }
+  }
+  
+  // Insert message to database
   const { data, error } = await supabase
     .from('chat_messages')
     .insert({
       contract_id: contractId,
       sender_id: senderId,
-      message,
+      message: message,
+      image_url: imageUrl,
       read: false
     })
     .select()

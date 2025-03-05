@@ -123,6 +123,7 @@ export interface ChatMessage {
   contract_id: string;
   sender_id: string;
   message: string;
+  image_url?: string; // Add support for image URLs
   read: boolean;
   created_at?: string;
   profiles?: {
