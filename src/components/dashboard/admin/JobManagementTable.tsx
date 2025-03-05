@@ -11,6 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -19,18 +20,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Search } from 'lucide-react';
-
-interface Job {
-  id: string;
-  title: string;
-  client_id: string;
-  category: string;
-  status: string;
-  budget_min?: number;
-  budget_max?: number;
-  created_at?: string;
-}
+import { MoreHorizontal, Search, ExternalLink } from 'lucide-react';
+import { Job } from '@/lib/supabase/types';
 
 interface JobManagementTableProps {
   jobs: Job[];
@@ -43,7 +34,9 @@ export function JobManagementTable({ jobs, loading = false }: JobManagementTable
   const filteredJobs = jobs.filter(job => 
     job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.status.toLowerCase().includes(searchTerm.toLowerCase())
+    job.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.skills_required.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   if (loading) {
@@ -62,7 +55,7 @@ export function JobManagementTable({ jobs, loading = false }: JobManagementTable
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search jobs..."
+            placeholder="Search jobs by title, category, status, or client..."
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -75,6 +68,7 @@ export function JobManagementTable({ jobs, loading = false }: JobManagementTable
           <TableHeader>
             <TableRow>
               <TableHead>Job Title</TableHead>
+              <TableHead>Client</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Budget</TableHead>
@@ -85,7 +79,7 @@ export function JobManagementTable({ jobs, loading = false }: JobManagementTable
           <TableBody>
             {filteredJobs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   No jobs found
                 </TableCell>
               </TableRow>
@@ -94,6 +88,19 @@ export function JobManagementTable({ jobs, loading = false }: JobManagementTable
                 <TableRow key={job.id}>
                   <TableCell className="font-medium">
                     {job.title}
+                  </TableCell>
+                  <TableCell>
+                    {job.profiles ? (
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={job.profiles.avatar_url} />
+                          <AvatarFallback>{job.profiles.full_name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span>{job.profiles.full_name}</span>
+                      </div>
+                    ) : (
+                      'Unknown Client'
+                    )}
                   </TableCell>
                   <TableCell>{job.category}</TableCell>
                   <TableCell>
@@ -117,6 +124,9 @@ export function JobManagementTable({ jobs, loading = false }: JobManagementTable
                         : job.budget_max 
                           ? `Up to $${job.budget_max}` 
                           : 'No budget specified'}
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {job.budget_type === 'fixed' ? 'Fixed price' : 'Hourly rate'}
+                    </div>
                   </TableCell>
                   <TableCell>{job.created_at ? new Date(job.created_at).toLocaleDateString() : 'Unknown'}</TableCell>
                   <TableCell>
@@ -129,7 +139,11 @@ export function JobManagementTable({ jobs, loading = false }: JobManagementTable
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          <a href={`/jobs/${job.id}`} className="w-full">View Details</a>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>View Applications</DropdownMenuItem>
                         <DropdownMenuItem>Edit Job</DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-red-600">Remove Job</DropdownMenuItem>

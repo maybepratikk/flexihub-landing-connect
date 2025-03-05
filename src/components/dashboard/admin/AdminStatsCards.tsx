@@ -5,13 +5,17 @@ import {
   FileText,
   AlertCircle,
   FileCheck,
-  Clock
+  Clock,
+  User,
+  Building
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface AdminStatsCardsProps {
   totalUsers: number;
+  clientUsers: number;
+  freelancerUsers: number;
   totalJobs: number;
   totalApplications: number;
   totalContracts: number;
@@ -22,6 +26,8 @@ interface AdminStatsCardsProps {
 
 export function AdminStatsCards({
   totalUsers,
+  clientUsers,
+  freelancerUsers,
   totalJobs,
   totalApplications,
   totalContracts,
@@ -37,9 +43,21 @@ export function AdminStatsCards({
       description: "Registered users on platform"
     },
     {
+      title: "Client Users",
+      value: clientUsers,
+      icon: <Building className="h-4 w-4 text-indigo-500" />,
+      description: "Registered client accounts"
+    },
+    {
+      title: "Freelancer Users",
+      value: freelancerUsers,
+      icon: <User className="h-4 w-4 text-green-500" />,
+      description: "Registered freelancer accounts"
+    },
+    {
       title: "Total Jobs",
       value: totalJobs,
-      icon: <Briefcase className="h-4 w-4 text-green-500" />,
+      icon: <Briefcase className="h-4 w-4 text-amber-500" />,
       description: "Jobs posted on platform"
     },
     {
@@ -57,7 +75,7 @@ export function AdminStatsCards({
     {
       title: "Total Contracts",
       value: totalContracts,
-      icon: <FileCheck className="h-4 w-4 text-indigo-500" />,
+      icon: <FileCheck className="h-4 w-4 text-emerald-500" />,
       description: "Contracts created"
     },
     {
@@ -69,9 +87,9 @@ export function AdminStatsCards({
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {stats.map((stat, index) => (
-        <Card key={index}>
+        <Card key={index} className="overflow-hidden border-t-4" style={{ borderTopColor: stat.icon.props.className.split(' ').find(c => c.startsWith('text-'))?.replace('text-', 'rgb(var(--'))?.concat(')))') || 'rgb(var(--primary))' }}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
               {stat.title}
