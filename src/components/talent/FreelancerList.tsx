@@ -71,14 +71,14 @@ export function FreelancerList({ filters }: FreelancerListProps) {
   // Group freelancers by experience level
   const groupedFreelancers = {
     expert: freelancers.filter(f => 
-      (f.freelancer_profiles?.years_experience || 0) >= 6
+      (f.freelancer_profile?.years_experience || 0) >= 6
     ),
-    intermediate: freelancers.filter(f => 
-      (f.freelancer_profiles?.years_experience || 0) >= 3 && 
-      (f.freelancer_profiles?.years_experience || 0) < 6
-    ),
+    intermediate: freelancers.filter(f => {
+      const years = f.freelancer_profile?.years_experience || 0;
+      return years >= 3 && years < 6;
+    }),
     entry: freelancers.filter(f => 
-      (f.freelancer_profiles?.years_experience || 0) < 3
+      (f.freelancer_profile?.years_experience || 0) < 3
     ),
   };
 

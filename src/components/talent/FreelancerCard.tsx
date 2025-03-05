@@ -1,5 +1,5 @@
 
-import { Star, MapPin, Clock, DollarSign, ExternalLink } from "lucide-react";
+import { Star, Clock, DollarSign } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,8 @@ interface FreelancerCardProps {
 export function FreelancerCard({ freelancer }: FreelancerCardProps) {
   const navigate = useNavigate();
   
-  const profile = freelancer.freelancer_profiles || {};
+  // Get data from the updated structure where freelancer_profile is a nested object
+  const profile = freelancer.freelancer_profile || {};
   const name = freelancer.full_name || "Unnamed Freelancer";
   const initials = name
     .split(" ")
