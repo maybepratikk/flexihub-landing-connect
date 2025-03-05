@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   email: string;
@@ -76,6 +77,16 @@ export interface JobApplication {
     skills?: string[];
     years_experience?: number;
     portfolio_links?: string[];
+  };
+  // Add the freelancer_profiles property that's being referenced in ApplicationsPage.tsx
+  freelancer_profiles?: {
+    full_name?: string;
+    avatar_url?: string;
+    bio?: string;
+    skills?: string[];
+    years_experience?: number;
+    portfolio_links?: string[];
+    education?: string;
   };
 }
 
