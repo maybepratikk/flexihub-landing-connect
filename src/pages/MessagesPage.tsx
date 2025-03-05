@@ -7,26 +7,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { getContractsWithMessages, getUnreadMessageCount } from '@/lib/supabase/chat';
-import { Contract } from '@/lib/supabase/types';
+import { Contract, Job } from '@/lib/supabase/types';
 
-interface ContractWithLastMessage extends Contract {
+interface ContractWithLastMessage extends Omit<Contract, 'jobs'> {
   last_message?: {
     message: string;
     created_at: string;
     sender_id: string;
   };
   unread_count?: number;
-  id: string;
-  client_id: string;
-  freelancer_id: string;
-  client?: {
-    full_name?: string;
-    avatar_url?: string;
-  };
-  freelancer?: {
-    full_name?: string;
-    avatar_url?: string;
-  };
   jobs?: {
     title?: string;
   };

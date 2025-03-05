@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   email: string;
@@ -17,6 +18,7 @@ export interface FreelancerProfile {
   skills?: string[];
   availability?: string;
   portfolio_url?: string;
+  portfolio_links?: string[];
   education?: string;
   created_at?: string;
   updated_at?: string;
@@ -75,6 +77,10 @@ export interface JobApplication {
   freelancer_profiles?: {
     full_name?: string;
     avatar_url?: string;
+    bio?: string;
+    skills?: string[];
+    years_experience?: number;
+    portfolio_links?: string[];
   };
 }
 
