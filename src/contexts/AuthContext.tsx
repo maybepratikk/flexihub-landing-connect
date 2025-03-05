@@ -84,6 +84,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Success!",
         description: "Please check your email to confirm your account.",
       });
+      
+      // Redirect to verification page
+      window.location.href = '/verify';
     } catch (error: any) {
       toast({
         title: "Error signing up",

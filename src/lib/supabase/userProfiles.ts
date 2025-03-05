@@ -26,16 +26,20 @@ export async function getUserProfile(userId: string) {
 
 export async function updateUserProfile(userId: string, updates: Partial<User>) {
   try {
+    console.log("Updating user profile for:", userId, "with updates:", updates);
     const { data, error } = await supabase
       .from('profiles')
       .update(updates)
-      .eq('id', userId);
+      .eq('id', userId)
+      .select()
+      .maybeSingle();
     
     if (error) {
       console.error('Error updating user profile:', error);
       return null;
     }
     
+    console.log("User profile updated:", data);
     return data;
   } catch (err) {
     console.error('Exception in updateUserProfile:', err);
@@ -45,17 +49,19 @@ export async function updateUserProfile(userId: string, updates: Partial<User>) 
 
 export async function createUserProfile(profile: any) {
   try {
+    console.log("Creating user profile:", profile);
     const { data, error } = await supabase
       .from('profiles')
       .insert(profile)
       .select()
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error('Error creating user profile:', error);
       return null;
     }
     
+    console.log("User profile created:", data);
     return data;
   } catch (err) {
     console.error('Exception in createUserProfile:', err);

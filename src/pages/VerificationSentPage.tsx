@@ -4,7 +4,7 @@ import { Footer } from '@/components/layout/Footer';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, ArrowRight } from 'lucide-react';
+import { Mail, ArrowRight, CheckCircle } from 'lucide-react';
 
 const VerificationSentPage = () => {
   return (
@@ -29,6 +29,10 @@ const VerificationSentPage = () => {
                     <p>
                       If you don't see the email, please check your spam folder or request a new verification email.
                     </p>
+                    <div className="flex items-center justify-center text-sm mt-4 p-4 bg-green-50 rounded-md">
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                      <span className="text-green-700">Your account has been created successfully! Please verify your email to continue.</span>
+                    </div>
                   </div>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-4">
