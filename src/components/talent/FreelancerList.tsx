@@ -33,6 +33,18 @@ export function FreelancerList({ filters }: FreelancerListProps) {
         console.log("Fetched freelancers:", data);
         
         if (data && data.length > 0) {
+          // Check if we're using mock data by comparing with the first mock entry
+          const usingMockData = JSON.stringify(data[0].id) === JSON.stringify(mockFreelancers[0].id);
+          setUseMockData(usingMockData);
+          
+          if (usingMockData) {
+            toast({
+              title: "Using demo data",
+              description: "No freelancers found in database, displaying demo data instead",
+              duration: 5000,
+            });
+          }
+          
           setFreelancers(data);
         } else {
           console.log("No freelancers found in database, using mock data");

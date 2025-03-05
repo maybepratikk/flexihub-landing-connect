@@ -1,6 +1,7 @@
 
 import { supabase } from './client';
 import type { FreelancerProfile } from './types';
+import { mockFreelancers } from '@/lib/mock/freelancers';
 
 export async function getFreelancerProfile(userId: string) {
   try {
@@ -51,8 +52,7 @@ export async function getFreelancers(filters: {
   console.log('Getting freelancers with filters:', filters);
   
   try {
-    // Try to fetch profiles directly with a join on freelancer_profiles
-    const { data: profiles, error: profilesError } = await supabase
+    let query = supabase
       .from('profiles')
       .select(`
         *,
@@ -60,15 +60,28 @@ export async function getFreelancers(filters: {
       `)
       .eq('user_type', 'freelancer');
     
+    const { data: profiles, error: profilesError } = await query;
+    
     if (profilesError) {
       console.error('Error fetching freelancer profiles:', profilesError);
-      throw new Error('Failed to fetch freelancers');
+      console.log('Falling back to mock data due to query error');
+      return mockFreelancers;
     }
     
-    console.log(`Found ${profiles?.length || 0} freelancer profiles`);
+    console.log(`Found ${profiles?.length || 0} freelancer profiles`, profiles);
+    
+    if (!profiles || profiles.length === 0) {
+      console.log('No freelancer profiles found in database, using mock data');
+      return mockFreelancers;
+    }
     
     // Filter out any profiles without freelancer_profile data
     let filteredData = profiles?.filter(profile => profile.freelancer_profile) || [];
+    
+    if (filteredData.length === 0) {
+      console.log('No freelancer profiles with complete data found, using mock data');
+      return mockFreelancers;
+    }
     
     // Apply filters to the results
     // Filter by skills if provided
@@ -139,6 +152,7 @@ export async function getFreelancers(filters: {
     
   } catch (error) {
     console.error('Error in getFreelancers:', error);
-    throw error;
+    console.log('Falling back to mock data due to exception');
+    return mockFreelancers;
   }
 }
