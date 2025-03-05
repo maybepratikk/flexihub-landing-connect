@@ -96,18 +96,21 @@ export async function getFreelancers(filters: {
   availability?: string;
   search: string;
 }) {
+  // Start with a base query to get all freelancer profiles
   let query = supabase
     .from('profiles')
     .select(`
       *,
       freelancer_profiles(*)
     `)
-    .eq('user_type', 'freelancer')
-    .not('freelancer_profiles', 'is', null);
+    .eq('user_type', 'freelancer');
 
-  // Apply skills filter if provided
+  // Apply filters only if they are provided and not empty
   if (filters.skills && filters.skills.length > 0) {
-    query = query.or(filters.skills.map(skill => `freelancer_profiles.skills.cs.{${skill}}`).join(','));
+    // Use a contains operator to check if any of the skills match
+    query = query.or(filters.skills.map(skill => 
+      `freelancer_profiles.skills.cs.{${skill}}`
+    ).join(','));
   }
 
   // Apply hourly rate filter if provided
@@ -124,10 +127,11 @@ export async function getFreelancers(filters: {
   }
 
   // Apply search filter if provided
-  if (filters.search) {
+  if (filters.search && filters.search.trim() !== '') {
     query = query.or(`full_name.ilike.%${filters.search}%, freelancer_profiles.bio.ilike.%${filters.search}%`);
   }
 
+  console.log('Final query:', query);
   const { data, error } = await query;
 
   if (error) {
@@ -135,5 +139,11 @@ export async function getFreelancers(filters: {
     throw new Error(`Failed to fetch freelancers: ${error.message}`);
   }
 
-  return data || [];
+  // Filter out any profiles that don't have freelancer_profiles data
+  const validFreelancers = data?.filter(profile => 
+    profile.freelancer_profiles && Object.keys(profile.freelancer_profiles).length > 0
+  ) || [];
+
+  console.log('Fetched freelancers:', validFreelancers.length);
+  return validFreelancers;
 }

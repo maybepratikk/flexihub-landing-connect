@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { getFreelancers } from "@/lib/supabase";
+import { getFreelancers } from "@/lib/supabase/profiles";
 import { FreelancerCard } from "./FreelancerCard";
 import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
