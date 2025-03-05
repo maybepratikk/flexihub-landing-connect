@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   email: string;
@@ -71,10 +70,6 @@ export interface JobApplication {
   created_at?: string;
   updated_at?: string;
   profiles?: {
-    full_name?: string;
-    avatar_url?: string;
-  };
-  freelancer_profiles?: {
     full_name?: string;
     avatar_url?: string;
     bio?: string;

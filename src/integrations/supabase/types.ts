@@ -43,6 +43,7 @@ export type Database = {
           contract_id: string | null
           created_at: string | null
           id: string
+          image_url: string | null
           message: string
           read: boolean | null
           sender_id: string | null
@@ -51,6 +52,7 @@ export type Database = {
           contract_id?: string | null
           created_at?: string | null
           id?: string
+          image_url?: string | null
           message: string
           read?: boolean | null
           sender_id?: string | null
@@ -59,6 +61,7 @@ export type Database = {
           contract_id?: string | null
           created_at?: string | null
           id?: string
+          image_url?: string | null
           message?: string
           read?: boolean | null
           sender_id?: string | null

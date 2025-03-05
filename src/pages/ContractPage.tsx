@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/contexts/AuthContext';
@@ -100,7 +99,7 @@ export default function ContractPage() {
   const isClient = user?.id === contract.client_id;
   
   // Extract job details and make sure we handle both array and object formats
-  const jobDetails = contract.jobs || {};
+  const jobDetails = contract.jobs || {} as Job;
   console.log("Job details extracted:", jobDetails);
   
   // Get the correct other party data
@@ -167,7 +166,7 @@ export default function ContractPage() {
               <div>
                 <h3 className="text-sm font-semibold mb-1">Rate</h3>
                 <p className="text-lg font-medium">
-                  ${contract.rate}{jobDetails.budget_type === 'hourly' ? '/hr' : ' (fixed)'}
+                  ${contract.rate}{jobDetails?.budget_type === 'hourly' ? '/hr' : ' (fixed)'}
                 </p>
               </div>
               
@@ -189,11 +188,11 @@ export default function ContractPage() {
                 <h3 className="text-sm font-semibold mb-1">Job</h3>
                 {jobDetails && (
                   <div className="mt-2">
-                    <h4 className="font-medium">{jobDetails.title || 'Unnamed Job'}</h4>
+                    <h4 className="font-medium">{jobDetails?.title || 'Unnamed Job'}</h4>
                     <p className="text-sm text-muted-foreground truncate">
-                      {jobDetails.description && jobDetails.description.substring(0, 100)}...
+                      {jobDetails?.description && jobDetails.description.substring(0, 100)}...
                     </p>
-                    {jobDetails.id && (
+                    {jobDetails?.id && (
                       <Button 
                         variant="link" 
                         className="p-0 h-auto mt-1"
