@@ -4,6 +4,7 @@ import type { User } from './types';
 
 export async function getUserProfile(userId: string) {
   try {
+    console.log("Fetching user profile for:", userId);
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -15,6 +16,7 @@ export async function getUserProfile(userId: string) {
       return null;
     }
     
+    console.log("User profile fetched:", data);
     return data;
   } catch (err) {
     console.error('Exception in getUserProfile:', err);

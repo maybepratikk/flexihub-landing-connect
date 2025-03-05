@@ -4,7 +4,8 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { FreelancerOnboarding } from '@/components/onboarding/FreelancerOnboarding';
 import { ClientOnboarding } from '@/components/onboarding/ClientOnboarding';
-import { getUserProfile, supabase } from '@/lib/supabase';
+import { getUserProfile } from '@/lib/supabase/userProfiles';
+import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -33,35 +34,8 @@ const OnboardingPage = () => {
         const profile = await getUserProfile(user.id);
         console.log("Profile from database:", profile);
         
-        // If profile doesn't exist but we have metadata, create the profile
-        if (!profile && metadataUserType) {
-          console.log("Creating missing profile with type:", metadataUserType);
-          const { error } = await supabase
-            .from('profiles')
-            .upsert({
-              id: user.id,
-              email: user.email,
-              full_name: user.user_metadata?.full_name,
-              user_type: metadataUserType,
-            }, { onConflict: 'id' });
-            
-          if (error) {
-            console.error("Error creating profile:", error);
-            toast({
-              title: "Error",
-              description: "Failed to create user profile. Please try again.",
-              variant: "destructive",
-            });
-          } else {
-            // Fetch the new profile
-            const newProfile = await getUserProfile(user.id);
-            if (newProfile) {
-              setUserType(newProfile.user_type);
-            } else {
-              setUserType(metadataUserType);
-            }
-          }
-        } else if (profile) {
+        // Set user type from either profile or metadata
+        if (profile?.user_type) {
           setUserType(profile.user_type);
         } else if (metadataUserType) {
           setUserType(metadataUserType);
