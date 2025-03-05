@@ -38,89 +38,63 @@ export async function getFreelancers(filters: {
   availability?: string;
   search: string;
 }) {
-  console.log('Fetching freelancers with filters:', filters);
+  console.log('Getting freelancers with filters:', filters);
   
   try {
-    // First fetch all users who are freelancers, joining with their freelancer_profiles
-    const { data, error } = await supabase
+    // Check if there are any freelancer profiles at all
+    const { data: freelancerProfiles, error: fpError } = await supabase
+      .from('freelancer_profiles')
+      .select('id');
+    
+    if (fpError) {
+      console.error('Error checking freelancer profiles:', fpError);
+      throw new Error('Failed to check freelancer profiles');
+    }
+    
+    // If there are no freelancer profiles, create some demo data
+    if (!freelancerProfiles || freelancerProfiles.length === 0) {
+      console.log('No freelancer profiles found. Creating demo data...');
+      await createDemoFreelancers();
+    }
+    
+    // Get all profiles that are freelancers
+    const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select(`
-        *,
-        freelancer_profile:freelancer_profiles!inner(*)
-      `)
+      .select('*')
       .eq('user_type', 'freelancer');
     
-    if (error) {
-      console.error('Error fetching freelancers:', error);
-      throw new Error(`Failed to fetch freelancers: ${error.message}`);
+    if (profilesError) {
+      console.error('Error fetching freelancer profiles:', profilesError);
+      throw new Error('Failed to fetch freelancers');
     }
     
-    console.log(`Found ${data?.length || 0} freelancer profiles`);
-    console.log('Sample data:', data?.[0]);
-    
-    if (!data || data.length === 0) {
-      // As a fallback, let's just fetch all profiles to see what we have
-      const { data: allProfiles, error: allProfilesError } = await supabase
-        .from('profiles')
-        .select('*');
-        
-      console.log('All profiles check:', allProfiles?.length || 0, allProfilesError);
-      
-      // Also check freelancer_profiles separately
-      const { data: allFreelancerProfiles, error: fpError } = await supabase
+    // For each profile, get their freelancer profile data
+    const result = [];
+    for (const profile of profiles || []) {
+      const { data: freelancerProfile, error: fpError } = await supabase
         .from('freelancer_profiles')
-        .select('*');
-        
-      console.log('All freelancer_profiles check:', allFreelancerProfiles?.length || 0, fpError);
+        .select('*')
+        .eq('id', profile.id)
+        .single();
       
-      // If we find some profiles but they didn't match our join, let's create some
-      // demo freelancer profiles for testing if needed
-      if ((allProfiles?.length || 0) > 0 && (allFreelancerProfiles?.length || 0) === 0) {
-        console.log('We have user profiles but no freelancer profiles. Creating some demo data.');
-        
-        // Find freelancer type users
-        const freelancerProfiles = allProfiles?.filter(p => p.user_type === 'freelancer') || [];
-        
-        // Create corresponding freelancer profiles if there are any freelancer users
-        for (const profile of freelancerProfiles) {
-          const { data: newFreelancerProfile, error: createError } = await supabase
-            .from('freelancer_profiles')
-            .insert({
-              id: profile.id,
-              bio: `Demo bio for ${profile.full_name || 'Freelancer'}`,
-              hourly_rate: Math.floor(Math.random() * 50) + 20,
-              skills: ['JavaScript', 'React', 'Node.js'],
-              years_experience: Math.floor(Math.random() * 10) + 1,
-              availability: 'Full-time'
-            })
-            .select('*');
-            
-          console.log('Created demo freelancer profile:', newFreelancerProfile, createError);
-        }
-        
-        // Try the original query again
-        const { data: retryData, error: retryError } = await supabase
-          .from('profiles')
-          .select(`
-            *,
-            freelancer_profile:freelancer_profiles(*)
-          `)
-          .eq('user_type', 'freelancer');
-          
-        if (retryError) {
-          console.error('Error in retry fetch:', retryError);
-          return [];
-        }
-        
-        console.log('Retry found', retryData?.length || 0, 'profiles');
-        return retryData || [];
+      if (fpError && fpError.code !== 'PGRST116') {
+        console.error(`Error fetching freelancer profile for ${profile.id}:`, fpError);
+        continue;
       }
       
-      return [];
+      // Combine the profile and freelancer_profile data
+      const combinedProfile = {
+        ...profile,
+        freelancer_profile: freelancerProfile || null
+      };
+      
+      result.push(combinedProfile);
     }
     
+    console.log(`Found ${result.length} freelancer profiles`);
+    
     // Apply filters to the results
-    let filteredData = data;
+    let filteredData = result;
     
     // Filter by skills if provided
     if (filters.skills && filters.skills.length > 0) {
@@ -182,11 +156,106 @@ export async function getFreelancers(filters: {
       );
     }
     
-    console.log(`Returning ${filteredData.length} freelancers after applying all filters`);
+    console.log(`Returning ${filteredData.length} freelancers after applying filters`);
     return filteredData;
     
   } catch (error) {
     console.error('Error in getFreelancers:', error);
     throw error;
+  }
+}
+
+// Helper function to create demo freelancer data
+async function createDemoFreelancers() {
+  try {
+    // Create some demo freelancer profiles
+    const demoFreelancers = [
+      {
+        full_name: "John Smith",
+        email: "john.smith@example.com",
+        user_type: "freelancer",
+        avatar_url: "https://randomuser.me/api/portraits/men/1.jpg"
+      },
+      {
+        full_name: "Sarah Johnson",
+        email: "sarah.johnson@example.com",
+        user_type: "freelancer",
+        avatar_url: "https://randomuser.me/api/portraits/women/2.jpg"
+      },
+      {
+        full_name: "David Lee",
+        email: "david.lee@example.com",
+        user_type: "freelancer",
+        avatar_url: "https://randomuser.me/api/portraits/men/3.jpg"
+      },
+      {
+        full_name: "Emily Chen",
+        email: "emily.chen@example.com",
+        user_type: "freelancer",
+        avatar_url: "https://randomuser.me/api/portraits/women/4.jpg"
+      },
+      {
+        full_name: "Michael Rodriguez",
+        email: "michael.rodriguez@example.com",
+        user_type: "freelancer",
+        avatar_url: "https://randomuser.me/api/portraits/men/5.jpg"
+      }
+    ];
+    
+    for (const demoFreelancer of demoFreelancers) {
+      // Check if profile already exists
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', demoFreelancer.email)
+        .single();
+      
+      if (existingProfile) {
+        console.log(`Profile for ${demoFreelancer.email} already exists, skipping`);
+        continue;
+      }
+      
+      // Insert the profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .insert(demoFreelancer)
+        .select('id')
+        .single();
+      
+      if (profileError) {
+        console.error(`Error creating demo profile for ${demoFreelancer.email}:`, profileError);
+        continue;
+      }
+      
+      console.log(`Created demo profile for ${demoFreelancer.email} with ID ${profile.id}`);
+      
+      // Create corresponding freelancer profile
+      const skills = ["JavaScript", "React", "CSS", "HTML", "Node.js", "TypeScript"].sort(() => 0.5 - Math.random()).slice(0, 3);
+      const freelancerProfile = {
+        id: profile.id,
+        bio: `Experienced ${skills.join(", ")} developer with a passion for creating beautiful and functional web applications.`,
+        hourly_rate: Math.floor(Math.random() * 50) + 30,
+        skills,
+        years_experience: Math.floor(Math.random() * 10) + 1,
+        availability: ["Full-time", "Part-time", "Contract", "Hourly"][Math.floor(Math.random() * 4)],
+        education: "Bachelor's in Computer Science",
+        portfolio_links: [`https://github.com/${demoFreelancer.full_name.split(' ')[0].toLowerCase()}`]
+      };
+      
+      const { error: fpError } = await supabase
+        .from('freelancer_profiles')
+        .insert(freelancerProfile);
+      
+      if (fpError) {
+        console.error(`Error creating freelancer profile for ${demoFreelancer.email}:`, fpError);
+        continue;
+      }
+      
+      console.log(`Created freelancer profile for ${demoFreelancer.email}`);
+    }
+    
+    console.log('Demo freelancer data creation completed');
+  } catch (error) {
+    console.error('Error creating demo freelancers:', error);
   }
 }

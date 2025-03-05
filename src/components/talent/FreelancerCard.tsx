@@ -13,7 +13,7 @@ interface FreelancerCardProps {
 export function FreelancerCard({ freelancer }: FreelancerCardProps) {
   const navigate = useNavigate();
   
-  // Get data from the updated structure where freelancer_profile is a nested object
+  // Get data from freelancer and freelancer_profile
   const profile = freelancer.freelancer_profile || {};
   const name = freelancer.full_name || "Unnamed Freelancer";
   const initials = name
