@@ -2,185 +2,187 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { getUserProfile } from '@/lib/supabase/userProfiles';
-import { getFreelancerProfile, updateFreelancerProfile } from '@/lib/supabase/freelancerProfiles';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { ProfileLayout } from '@/components/profile/ProfileLayout';
+import { z } from 'zod';
 import { useForm } from 'react-hook-form';
-import * as z from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { ProfileLayout } from '@/components/profile/ProfileLayout';
-import { Separator } from '@/components/ui/separator';
-import { 
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from '@/components/ui/form';
-import { useToast } from '@/components/ui/use-toast';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { getUserProfile, updateUserProfile } from '@/lib/supabase/userProfiles';
 
-const formSchema = z.object({
-  full_name: z.string().min(2, {
-    message: "Full name must be at least 2 characters.",
-  }),
-  bio: z.string().min(10, {
-    message: "Bio must be at least 10 characters.",
-  }).max(500, {
-    message: "Bio must not exceed 500 characters."
-  }),
-  hourly_rate: z.coerce.number().min(1, {
-    message: "Hourly rate must be at least $1.",
-  }),
-  years_experience: z.coerce.number().min(0, {
-    message: "Experience must be a positive number.",
-  }),
+// Define the form schema
+const profileFormSchema = z.object({
+  hourly_rate: z.coerce.number().min(1, { message: "Hourly rate must be at least 1" }),
+  years_experience: z.coerce.number().min(0, { message: "Years of experience must be a positive number" }),
+  title: z.string().min(1, { message: "Title is required" }),
+  bio: z.string().min(10, { message: "Bio should be at least 10 characters" }),
+  skills: z.array(z.string()).min(1, { message: "At least one skill is required" }),
+  availability: z.string().min(1, { message: "Availability is required" }),
+  portfolio_url: z.string().url({ message: "Must be a valid URL" }).optional().or(z.literal('')),
   education: z.string().optional(),
-  skills: z.string().transform(val => val.split(',').map(skill => skill.trim())),
-  portfolio_links: z.string()
-    .transform(val => val ? val.split(',').map(link => link.trim()) : [])
-    .optional(),
-  availability: z.string().optional(),
 });
+
+// Define the form values type
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function FreelancerProfilePage() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [freelancerProfile, setFreelancerProfile] = useState<any>(null);
-  
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const [skillsInput, setSkillsInput] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  // Initialize form with default values
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      full_name: '',
-      bio: '',
       hourly_rate: 0,
       years_experience: 0,
-      education: '',
-      skills: '',
-      portfolio_links: '',
+      title: '',
+      bio: '',
+      skills: [],
       availability: '',
+      portfolio_url: '',
+      education: '',
     },
   });
-  
+
+  // Fetch user profile data
   useEffect(() => {
-    const fetchProfiles = async () => {
-      if (!user) {
-        navigate('/signin');
-        return;
-      }
-      
+    async function fetchUserProfile() {
+      if (!user) return;
+
+      setLoading(true);
       try {
-        setLoading(true);
-        
-        // Fetch user profile
-        const userProfileData = await getUserProfile(user.id);
-        setUserProfile(userProfileData);
-        
-        // Fetch freelancer profile
-        const freelancerProfileData = await getFreelancerProfile(user.id);
-        setFreelancerProfile(freelancerProfileData);
-        
-        // Set form values
-        form.reset({
-          full_name: userProfileData?.full_name || '',
-          bio: freelancerProfileData?.bio || '',
-          hourly_rate: freelancerProfileData?.hourly_rate || 0,
-          years_experience: freelancerProfileData?.years_experience || 0,
-          education: freelancerProfileData?.education || '',
-          skills: freelancerProfileData?.skills?.join(', ') || '',
-          portfolio_links: freelancerProfileData?.portfolio_links?.join(', ') || '',
-          availability: freelancerProfileData?.availability || '',
-        });
+        console.log("Fetching freelancer profile for user:", user.id);
+        const profileData = await getUserProfile(user.id);
+        console.log("Fetched profile data:", profileData);
+
+        if (profileData?.freelancer_profile) {
+          const freelancerData = profileData.freelancer_profile;
+          
+          // Convert skills string to array if needed
+          const skills = Array.isArray(freelancerData.skills) 
+            ? freelancerData.skills 
+            : (freelancerData.skills ? [freelancerData.skills] : []);
+          
+          form.reset({
+            hourly_rate: freelancerData.hourly_rate || 0,
+            years_experience: freelancerData.years_experience || 0,
+            title: freelancerData.title || '',
+            bio: freelancerData.bio || '',
+            skills: skills,
+            availability: freelancerData.availability || '',
+            portfolio_url: freelancerData.portfolio_url || '',
+            education: freelancerData.education || '',
+          });
+        }
       } catch (error) {
-        console.error('Error fetching profiles:', error);
+        console.error("Error fetching freelancer profile:", error);
         toast({
           title: "Error",
-          description: "Failed to load your profile information.",
+          description: "Failed to load profile data",
           variant: "destructive",
         });
       } finally {
         setLoading(false);
       }
-    };
+    }
+
+    fetchUserProfile();
+  }, [user, form, toast]);
+
+  const handleAddSkill = () => {
+    if (!skillsInput.trim()) return;
     
-    fetchProfiles();
-  }, [user, navigate, toast, form]);
-  
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    const currentSkills = form.getValues().skills || [];
+    if (!currentSkills.includes(skillsInput)) {
+      form.setValue('skills', [...currentSkills, skillsInput]);
+    }
+    setSkillsInput('');
+  };
+
+  const handleRemoveSkill = (skill: string) => {
+    const currentSkills = form.getValues().skills;
+    form.setValue('skills', currentSkills.filter(s => s !== skill));
+  };
+
+  const onSubmit = async (values: ProfileFormValues) => {
     if (!user) return;
     
+    setSubmitting(true);
     try {
-      setSaving(true);
+      console.log("Updating freelancer profile with values:", values);
       
-      // Update user profile (just the name)
-      await updateUserProfile(user.id, {
-        full_name: values.full_name,
+      const updatedProfile = await updateUserProfile(user.id, {
+        freelancer_profile: {
+          hourly_rate: values.hourly_rate,
+          years_experience: values.years_experience,
+          title: values.title,
+          bio: values.bio,
+          skills: values.skills,
+          availability: values.availability,
+          portfolio_url: values.portfolio_url || null,
+          education: values.education || null,
+        }
       });
       
-      // Update freelancer profile (all other fields)
-      await updateFreelancerProfile(user.id, {
-        bio: values.bio,
-        hourly_rate: values.hourly_rate,
-        years_experience: values.years_experience,
-        education: values.education,
-        skills: values.skills,
-        portfolio_links: values.portfolio_links,
-        availability: values.availability,
-      });
-      
-      toast({
-        title: "Profile Updated",
-        description: "Your profile has been successfully updated.",
-      });
+      if (updatedProfile) {
+        toast({
+          title: "Profile Updated",
+          description: "Your profile has been successfully updated.",
+        });
+      } else {
+        throw new Error("Failed to update profile");
+      }
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error("Error updating profile:", error);
       toast({
         title: "Error",
-        description: "Failed to update your profile.",
+        description: "Failed to update profile. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setSaving(false);
+      setSubmitting(false);
     }
   };
-  
+
   if (loading) {
     return (
-      <ProfileLayout heading="Profile">
-        <div className="flex justify-center items-center h-64">
+      <ProfileLayout 
+        heading="Freelancer Profile" 
+        description="Manage your professional profile information"
+      >
+        <div className="flex justify-center items-center py-10">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </ProfileLayout>
     );
   }
-  
+
   return (
     <ProfileLayout 
       heading="Freelancer Profile" 
-      description="Manage your professional information and preferences"
+      description="Manage your professional profile information"
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Personal Information</h2>
-            <Separator />
-            
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
-              name="full_name"
+              name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name</FormLabel>
+                  <FormLabel>Professional Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Your full name" {...field} />
+                    <Input placeholder="Senior Web Developer" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -189,65 +191,128 @@ export default function FreelancerProfilePage() {
             
             <FormField
               control={form.control}
-              name="bio"
+              name="hourly_rate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bio</FormLabel>
+                  <FormLabel>Hourly Rate (USD)</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Tell clients about yourself and your expertise..." 
-                      className="min-h-32"
-                      {...field} 
-                    />
+                    <Input type="number" min="1" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="years_experience"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Years of Experience</FormLabel>
+                  <FormControl>
+                    <Input type="number" min="0" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="availability"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Availability</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select availability" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Full-time">Full-time</SelectItem>
+                      <SelectItem value="Part-time">Part-time</SelectItem>
+                      <SelectItem value="Evenings & Weekends">Evenings & Weekends</SelectItem>
+                      <SelectItem value="Less than 10 hours">Less than 10 hours</SelectItem>
+                      <SelectItem value="As needed">As needed</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
           </div>
           
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Professional Details</h2>
-            <Separator />
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="hourly_rate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Hourly Rate ($)</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="0" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          <FormField
+            control={form.control}
+            name="bio"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Bio</FormLabel>
+                <FormControl>
+                  <Textarea 
+                    placeholder="Tell clients about your experience, skills, and expertise" 
+                    className="min-h-[120px]" 
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <div>
+            <FormLabel>Skills</FormLabel>
+            <div className="flex gap-2 mb-2">
+              <Input 
+                placeholder="Add a skill (e.g. React, Node.js)" 
+                value={skillsInput}
+                onChange={(e) => setSkillsInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
               />
-              
-              <FormField
-                control={form.control}
-                name="years_experience"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Years of Experience</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="0" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <Button type="button" onClick={handleAddSkill}>Add</Button>
             </div>
             
+            {form.formState.errors.skills && (
+              <p className="text-sm font-medium text-destructive">
+                {form.formState.errors.skills.message}
+              </p>
+            )}
+            
+            <div className="flex flex-wrap gap-2 mt-2">
+              {form.watch('skills').map((skill, index) => (
+                <div 
+                  key={index} 
+                  className="bg-primary/10 text-primary px-3 py-1 rounded-full flex items-center text-sm"
+                >
+                  {skill}
+                  <button 
+                    type="button" 
+                    className="ml-2 text-primary hover:text-primary/80"
+                    onClick={() => handleRemoveSkill(skill)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              {form.watch('skills').length === 0 && (
+                <p className="text-sm text-muted-foreground">No skills added yet</p>
+              )}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
-              name="skills"
+              name="portfolio_url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Skills</FormLabel>
+                  <FormLabel>Portfolio URL</FormLabel>
                   <FormControl>
-                    <Input placeholder="JavaScript, React, UI/UX Design, etc. (comma-separated)" {...field} />
+                    <Input placeholder="https://portfolio.example.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -261,35 +326,7 @@ export default function FreelancerProfilePage() {
                 <FormItem>
                   <FormLabel>Education</FormLabel>
                   <FormControl>
-                    <Input placeholder="Your educational background" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="portfolio_links"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Portfolio Links</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://github.com/username, https://portfolio.com (comma-separated)" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="availability"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Availability</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Full-time, Part-time, Weekends only, etc." {...field} />
+                    <Input placeholder="University or relevant courses" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -297,20 +334,28 @@ export default function FreelancerProfilePage() {
             />
           </div>
           
-          <div className="flex justify-end">
-            <Button type="submit" disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
+          <div className="flex justify-end gap-4 pt-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => navigate('/dashboard')}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : 'Save Changes'}
             </Button>
           </div>
         </form>
       </Form>
     </ProfileLayout>
   );
-}
-
-function updateUserProfile(userId: string, updates: { full_name: string }) {
-  return import('@/lib/supabase/userProfiles').then(({ updateUserProfile }) => {
-    return updateUserProfile(userId, updates);
-  });
 }

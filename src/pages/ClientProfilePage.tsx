@@ -2,61 +2,41 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { getUserProfile } from '@/lib/supabase/userProfiles';
-import { getClientProfile, updateClientProfile } from '@/lib/supabase/clientProfiles';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { ProfileLayout } from '@/components/profile/ProfileLayout';
+import { z } from 'zod';
 import { useForm } from 'react-hook-form';
-import * as z from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ProfileLayout } from '@/components/profile/ProfileLayout';
-import { Separator } from '@/components/ui/separator';
-import { 
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from '@/components/ui/form';
-import { useToast } from '@/components/ui/use-toast';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { getUserProfile, updateUserProfile } from '@/lib/supabase/userProfiles';
 
-const formSchema = z.object({
-  full_name: z.string().min(2, {
-    message: "Full name must be at least 2 characters.",
-  }),
-  company_name: z.string().min(2, {
-    message: "Company name must be at least 2 characters.",
-  }),
-  industry: z.string().min(2, {
-    message: "Industry must be at least 2 characters.",
-  }),
-  company_size: z.string().min(1, {
-    message: "Company size is required",
-  }),
-  company_description: z.string().min(10, {
-    message: "Company description must be at least 10 characters.",
-  }).max(500, {
-    message: "Company description must not exceed 500 characters."
-  }),
-  website: z.string().url({ message: "Please enter a valid URL" }).optional().or(z.literal('')),
+// Define the form schema
+const clientProfileSchema = z.object({
+  company_name: z.string().min(1, { message: "Company name is required" }),
+  industry: z.string().min(1, { message: "Industry is required" }),
+  company_size: z.string().min(1, { message: "Company size is required" }),
+  company_description: z.string().min(10, { message: "Description should be at least 10 characters" }),
+  website: z.string().url({ message: "Must be a valid URL" }).optional().or(z.literal('')),
 });
+
+// Define the form values type
+type ClientProfileFormValues = z.infer<typeof clientProfileSchema>;
 
 export default function ClientProfilePage() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [clientProfile, setClientProfile] = useState<any>(null);
-  
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const [submitting, setSubmitting] = useState(false);
+
+  // Initialize form with default values
+  const form = useForm<ClientProfileFormValues>({
+    resolver: zodResolver(clientProfileSchema),
     defaultValues: {
-      full_name: '',
       company_name: '',
       industry: '',
       company_size: '',
@@ -64,125 +44,101 @@ export default function ClientProfilePage() {
       website: '',
     },
   });
-  
+
+  // Fetch user profile data
   useEffect(() => {
-    const fetchProfiles = async () => {
-      if (!user) {
-        navigate('/signin');
-        return;
-      }
-      
+    async function fetchUserProfile() {
+      if (!user) return;
+
+      setLoading(true);
       try {
-        setLoading(true);
-        
-        // Fetch user profile
-        const userProfileData = await getUserProfile(user.id);
-        setUserProfile(userProfileData);
-        
-        // Fetch client profile
-        const clientProfileData = await getClientProfile(user.id);
-        setClientProfile(clientProfileData);
-        
-        // Set form values
-        form.reset({
-          full_name: userProfileData?.full_name || '',
-          company_name: clientProfileData?.company_name || '',
-          industry: clientProfileData?.industry || '',
-          company_size: clientProfileData?.company_size || '',
-          company_description: clientProfileData?.company_description || '',
-          website: clientProfileData?.website || '',
-        });
+        console.log("Fetching client profile for user:", user.id);
+        const profileData = await getUserProfile(user.id);
+        console.log("Fetched profile data:", profileData);
+
+        if (profileData?.client_profile) {
+          const clientData = profileData.client_profile;
+          form.reset({
+            company_name: clientData.company_name || '',
+            industry: clientData.industry || '',
+            company_size: clientData.company_size || '',
+            company_description: clientData.company_description || '',
+            website: clientData.website || '',
+          });
+        }
       } catch (error) {
-        console.error('Error fetching profiles:', error);
+        console.error("Error fetching client profile:", error);
         toast({
           title: "Error",
-          description: "Failed to load your profile information.",
+          description: "Failed to load profile data",
           variant: "destructive",
         });
       } finally {
         setLoading(false);
       }
-    };
-    
-    fetchProfiles();
-  }, [user, navigate, toast, form]);
-  
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    }
+
+    fetchUserProfile();
+  }, [user, form, toast]);
+
+  const onSubmit = async (values: ClientProfileFormValues) => {
     if (!user) return;
     
+    setSubmitting(true);
     try {
-      setSaving(true);
+      console.log("Updating client profile with values:", values);
       
-      // Update user profile (just the name)
-      await updateUserProfile(user.id, {
-        full_name: values.full_name,
+      const updatedProfile = await updateUserProfile(user.id, {
+        client_profile: {
+          company_name: values.company_name,
+          industry: values.industry,
+          company_size: values.company_size,
+          company_description: values.company_description,
+          website: values.website || null,
+        }
       });
       
-      // Update client profile (all other fields)
-      await updateClientProfile(user.id, {
-        company_name: values.company_name,
-        industry: values.industry,
-        company_size: values.company_size,
-        company_description: values.company_description,
-        website: values.website,
-      });
-      
-      toast({
-        title: "Profile Updated",
-        description: "Your company profile has been successfully updated.",
-      });
+      if (updatedProfile) {
+        toast({
+          title: "Profile Updated",
+          description: "Your company profile has been successfully updated.",
+        });
+      } else {
+        throw new Error("Failed to update profile");
+      }
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error("Error updating profile:", error);
       toast({
         title: "Error",
-        description: "Failed to update your profile.",
+        description: "Failed to update profile. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setSaving(false);
+      setSubmitting(false);
     }
   };
-  
+
   if (loading) {
     return (
-      <ProfileLayout heading="Profile">
-        <div className="flex justify-center items-center h-64">
+      <ProfileLayout 
+        heading="Client Profile" 
+        description="Manage your company information"
+      >
+        <div className="flex justify-center items-center py-10">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </ProfileLayout>
     );
   }
-  
+
   return (
     <ProfileLayout 
-      heading="Company Profile" 
-      description="Manage your company information and preferences"
+      heading="Client Profile" 
+      description="Manage your company information"
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Personal Information</h2>
-            <Separator />
-            
-            <FormField
-              control={form.control}
-              name="full_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Your full name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Company Information</h2>
-            <Separator />
-            
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
               name="company_name"
@@ -197,48 +153,28 @@ export default function ClientProfilePage() {
               )}
             />
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="industry"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Industry</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Technology, Healthcare" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="company_size"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Size</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. 1-10, 11-50, 51-200" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="industry"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Industry</FormLabel>
+                  <FormControl>
+                    <Input placeholder="E.g. Technology, Healthcare" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <FormField
               control={form.control}
-              name="company_description"
+              name="company_size"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Company Description</FormLabel>
+                  <FormLabel>Company Size</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Tell freelancers about your company and what you do..." 
-                      className="min-h-32"
-                      {...field} 
-                    />
+                    <Input placeholder="E.g. 1-10, 11-50, 51-200" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -250,9 +186,9 @@ export default function ClientProfilePage() {
               name="website"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Website (optional)</FormLabel>
+                  <FormLabel>Company Website</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://yourcompany.com" {...field} />
+                    <Input placeholder="https://example.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -260,20 +196,46 @@ export default function ClientProfilePage() {
             />
           </div>
           
-          <div className="flex justify-end">
-            <Button type="submit" disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
+          <FormField
+            control={form.control}
+            name="company_description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Company Description</FormLabel>
+                <FormControl>
+                  <Textarea 
+                    placeholder="Describe your company, mission, and values" 
+                    className="min-h-[120px]" 
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <div className="flex justify-end gap-4 pt-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => navigate('/dashboard')}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : 'Save Changes'}
             </Button>
           </div>
         </form>
       </Form>
     </ProfileLayout>
   );
-}
-
-function updateUserProfile(userId: string, updates: { full_name: string }) {
-  return import('@/lib/supabase/userProfiles').then(({ updateUserProfile }) => {
-    return updateUserProfile(userId, updates);
-  });
 }
