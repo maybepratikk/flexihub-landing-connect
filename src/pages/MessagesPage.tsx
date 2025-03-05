@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,6 +16,20 @@ interface ContractWithLastMessage extends Contract {
     sender_id: string;
   };
   unread_count?: number;
+  id: string;
+  client_id: string;
+  freelancer_id: string;
+  client?: {
+    full_name?: string;
+    avatar_url?: string;
+  };
+  freelancer?: {
+    full_name?: string;
+    avatar_url?: string;
+  };
+  jobs?: {
+    title?: string;
+  };
 }
 
 export default function MessagesPage() {
@@ -33,7 +46,6 @@ export default function MessagesPage() {
         setLoading(true);
         const contractsWithMessages = await getContractsWithMessages(user.id);
         
-        // Get unread message counts for each contract
         const contractsWithUnreadCounts = await Promise.all(
           contractsWithMessages.map(async (contract) => {
             const unreadCount = await getUnreadMessageCount(contract.id, user.id);
@@ -44,7 +56,6 @@ export default function MessagesPage() {
           })
         );
         
-        // Sort contracts by last message date (most recent first)
         const sortedContracts = contractsWithUnreadCounts.sort((a, b) => {
           const dateA = a.last_message?.created_at ? new Date(a.last_message.created_at) : new Date(0);
           const dateB = b.last_message?.created_at ? new Date(b.last_message.created_at) : new Date(0);

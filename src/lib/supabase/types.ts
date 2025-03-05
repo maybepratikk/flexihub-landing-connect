@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   email: string;
@@ -73,6 +72,10 @@ export interface JobApplication {
     full_name?: string;
     avatar_url?: string;
   };
+  freelancer_profiles?: {
+    full_name?: string;
+    avatar_url?: string;
+  };
 }
 
 // Add Contract interface
@@ -116,4 +119,8 @@ export interface ChatMessage {
   message: string;
   read: boolean;
   created_at?: string;
+  profiles?: {
+    full_name?: string;
+    avatar_url?: string;
+  };
 }

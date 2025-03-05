@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { 
   sendChatMessage, 
@@ -15,6 +14,7 @@ import { Send } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useNotification } from '@/contexts/NotificationContext';
 
 interface ChatInterfaceProps {
   contractId: string;
@@ -29,8 +29,12 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
   const [sending, setSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { showMessageNotification } = useNotification();
   
-  // Fetch messages on component mount
+  useEffect(() => {
+    localStorage.setItem('currentUserId', currentUserId);
+  }, [currentUserId]);
+  
   useEffect(() => {
     const fetchMessages = async () => {
       setLoading(true);
@@ -38,7 +42,6 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
         const chatMessages = await getChatMessages(contractId);
         setMessages(chatMessages);
         
-        // Mark all messages from the other party as read
         await markMessagesAsRead(contractId, currentUserId);
       } catch (error) {
         console.error('Error loading messages:', error);
@@ -54,26 +57,22 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
     
     fetchMessages();
     
-    // Subscribe to new messages using the Supabase realtime API
     const setupSubscription = async () => {
       try {
         const subscription = await subscribeToContractMessages(contractId, (newMessage) => {
           console.log("New message received via realtime:", newMessage);
           
-          // If we have all the data we need directly in the payload
           if (newMessage) {
             setMessages(prevMessages => {
-              // Check if the message already exists in our messages array
               const exists = prevMessages.some(m => m.id === newMessage.id);
               if (exists) return prevMessages;
               
-              // Add the new message to the messages array
               return [...prevMessages, newMessage];
             });
             
-            // If message is from the other party, mark it as read
             if (newMessage.sender_id !== currentUserId) {
               markMessagesAsRead(contractId, currentUserId);
+              showMessageNotification(newMessage);
             }
           }
         });
@@ -89,16 +88,14 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
     const unsubscribe = setupSubscription();
     
     return () => {
-      // Clean up the subscription when the component unmounts
       if (unsubscribe) {
         unsubscribe.then(unsub => {
           if (unsub) unsub();
         });
       }
     };
-  }, [contractId, currentUserId, toast]);
+  }, [contractId, currentUserId, toast, showMessageNotification]);
   
-  // Scroll to bottom when messages change
   useEffect(() => {
     if (scrollAreaRef.current) {
       const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
@@ -113,14 +110,12 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
     
     try {
       setSending(true);
-      setNewMessage(''); // Clear input immediately for better UX
+      setNewMessage('');
       const sentMessage = await sendChatMessage(contractId, currentUserId, newMessage.trim());
       
       if (!sentMessage) {
         throw new Error("Failed to send message");
       }
-      
-      // No need to manually add to messages array since we'll get it via subscription
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
