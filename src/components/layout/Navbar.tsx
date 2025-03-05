@@ -7,8 +7,7 @@ import {
   Menu,
   X,
   ChevronDown,
-  MessageSquare,
-  ShieldAlert
+  MessageSquare
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -35,13 +34,6 @@ export function Navbar() {
     
     if (!user) {
       return commonLinks;
-    }
-    
-    if (userType === 'admin') {
-      return [
-        ...commonLinks,
-        { name: 'Admin Dashboard', href: '/admin' }
-      ];
     }
     
     if (userType === 'client') {
@@ -124,18 +116,6 @@ export function Navbar() {
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <>
-                {userType === 'admin' && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hover-transition text-red-500"
-                    asChild
-                  >
-                    <Link to="/admin" aria-label="Admin Dashboard">
-                      <ShieldAlert size={20} />
-                    </Link>
-                  </Button>
-                )}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -161,11 +141,6 @@ export function Navbar() {
                     <DropdownMenuItem asChild>
                       <Link to="/dashboard">Dashboard</Link>
                     </DropdownMenuItem>
-                    {userType === 'admin' && (
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin">Admin Dashboard</Link>
-                      </DropdownMenuItem>
-                    )}
                     <DropdownMenuItem asChild>
                       <Link to="/profile">Profile</Link>
                     </DropdownMenuItem>
@@ -223,15 +198,6 @@ export function Navbar() {
               <div className="pt-2 border-t border-gray-100">
                 {user ? (
                   <>
-                    {userType === 'admin' && (
-                      <Link
-                        to="/admin"
-                        className="flex items-center py-2 text-red-500 hover:text-red-600"
-                      >
-                        <ShieldAlert size={16} className="mr-2" />
-                        Admin Dashboard
-                      </Link>
-                    )}
                     <Link
                       to="/messages"
                       className="flex items-center py-2 text-foreground/80 hover:text-foreground"

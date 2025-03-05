@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -7,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface ExtendedUser extends User {
   user_metadata: {
     full_name?: string;
-    user_type?: 'freelancer' | 'client' | 'admin';
+    user_type?: 'freelancer' | 'client';
   };
 }
 
@@ -16,7 +15,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, userType: string) => Promise<void>;
-  signIn: (email: string, password: string, forceUserType?: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 }
@@ -112,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signIn = async (email: string, password: string, forceUserType?: string) => {
+  const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
       const { error } = await supabase.auth.signInWithPassword({
@@ -121,16 +120,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) throw error;
-      
-      if (forceUserType) {
-        if (forceUserType === 'admin') {
-          await supabase.auth.updateUser({
-            data: {
-              user_type: 'admin'
-            }
-          });
-        }
-      }
       
       toast({
         title: "Welcome back!",
