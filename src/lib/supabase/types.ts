@@ -107,6 +107,18 @@ export type Contract = {
       avatar_url?: string;
     };
   };
+  client?: {
+    id?: string;
+    full_name?: string;
+    avatar_url?: string;
+    email?: string;
+  };
+  freelancer?: {
+    id?: string;
+    full_name?: string;
+    avatar_url?: string;
+    email?: string;
+  };
   jobs?: {
     title?: string;
     description?: string;

@@ -107,19 +107,30 @@ export default function ContractPage() {
   // Get the correct other party data
   const otherPartyId = isClient ? contract.freelancer_id : contract.client_id;
   
-  // Handle different structures for profiles data
+  // Handle different structures for profiles data based on the Contract type
   let otherParty = null;
+  
+  // Log to debug the structure of contract.profiles
+  console.log("Profiles structure:", contract.profiles);
+  
   if (contract.profiles) {
     if (isClient) {
       // When viewing as client, get freelancer info (from freelancer_id key)
-      otherParty = contract.profiles.freelancer_id || contract.profiles.freelancer || contract.profiles;
+      otherParty = contract.profiles.freelancer_id || {};
     } else {
       // When viewing as freelancer, get client info (from client_id key)
-      otherParty = contract.profiles.client_id || contract.profiles.client || contract.profiles;
+      otherParty = contract.profiles.client_id || {};
     }
   } else {
-    // Try to get profiles from separate properties
-    otherParty = isClient ? contract.freelancer : contract.client;
+    // Try to get profiles from separate properties that might be directly on the contract
+    if (isClient && contract.freelancer) {
+      otherParty = contract.freelancer;
+    } else if (!isClient && contract.client) {
+      otherParty = contract.client;
+    } else {
+      // Fallback to an empty object if neither is available
+      otherParty = {};
+    }
   }
 
   // Log the contract data to see what we're working with
