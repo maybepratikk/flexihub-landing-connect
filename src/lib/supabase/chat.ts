@@ -1,6 +1,7 @@
 
 import { supabase } from './client';
 import type { ChatMessage } from './types';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 export async function sendChatMessage(contractId: string, senderId: string, message: string) {
   const { data, error } = await supabase
@@ -57,9 +58,11 @@ export async function markMessagesAsRead(contractId: string, userId: string) {
 export async function subscribeToContractMessages(
   contractId: string, 
   callback: (message: ChatMessage) => void
-) {
-  // Set up a channel specifically for this contract's messages
-  return supabase
+): Promise<RealtimeChannel> {
+  console.log(`Setting up real-time subscription for contract: ${contractId}`);
+  
+  // Create a dedicated channel for this contract's messages
+  const channel = supabase
     .channel(`contract-messages-${contractId}`)
     .on('postgres_changes', 
       { 
@@ -68,12 +71,31 @@ export async function subscribeToContractMessages(
         table: 'chat_messages',
         filter: `contract_id=eq.${contractId}`
       }, 
-      (payload) => {
-        // Pass the new message data to the callback
-        callback(payload.new as ChatMessage);
+      async (payload) => {
+        console.log('New message payload received:', payload);
+        
+        // Get complete message data with profile information
+        const { data, error } = await supabase
+          .from('chat_messages')
+          .select('*, profiles!inner(full_name, avatar_url)')
+          .eq('id', payload.new.id)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching complete message data:', error);
+          // Fall back to raw payload if we can't get the complete data
+          callback(payload.new as ChatMessage);
+        } else {
+          // Pass the complete message data to the callback
+          callback(data as ChatMessage);
+        }
       }
     )
-    .subscribe();
+    .subscribe(status => {
+      console.log(`Realtime subscription status for contract ${contractId}:`, status);
+    });
+  
+  return channel;
 }
 
 export async function getUnreadMessageCount(contractId: string, userId: string) {

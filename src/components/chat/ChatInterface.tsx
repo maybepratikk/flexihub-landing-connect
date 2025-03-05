@@ -58,7 +58,7 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
     const setupSubscription = async () => {
       try {
         const subscription = await subscribeToContractMessages(contractId, (newMessage) => {
-          console.log("New message received:", newMessage);
+          console.log("New message received via realtime:", newMessage);
           
           // If we have all the data we need directly in the payload
           if (newMessage) {
