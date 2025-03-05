@@ -86,10 +86,21 @@ export function AdminStatsCards({
     }
   ];
 
+  // Function to extract color from className and convert to RGB variable format
+  const getColorFromClassName = (className: string) => {
+    const colorClass = className.split(' ').find(c => c.startsWith('text-'));
+    if (colorClass) {
+      return `rgb(var(--${colorClass.replace('text-', '')}))`;
+    }
+    return 'rgb(var(--primary))';
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {stats.map((stat, index) => (
-        <Card key={index} className="overflow-hidden border-t-4" style={{ borderTopColor: stat.icon.props.className.split(' ').find(c => c.startsWith('text-'))?.replace('text-', 'rgb(var(--'))?.concat(')))') || 'rgb(var(--primary))' }}>
+        <Card key={index} className="overflow-hidden border-t-4" style={{ 
+          borderTopColor: getColorFromClassName(stat.icon.props.className)
+        }}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
               {stat.title}
