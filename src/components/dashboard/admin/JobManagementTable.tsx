@@ -103,7 +103,7 @@ export function JobManagementTable({ jobs, loading = false }: JobManagementTable
                         : job.status === 'in_progress' 
                           ? 'secondary' 
                           : job.status === 'completed'
-                            ? 'success'
+                            ? 'outline'
                             : 'destructive'
                     }>
                       {job.status}

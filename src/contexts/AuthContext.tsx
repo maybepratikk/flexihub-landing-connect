@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface ExtendedUser extends User {
   user_metadata: {
     full_name?: string;
-    user_type?: 'freelancer' | 'client';
+    user_type?: 'freelancer' | 'client' | 'admin';
   };
 }
 
