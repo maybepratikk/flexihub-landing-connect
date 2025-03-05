@@ -6,5 +6,5 @@ export * from './clientProfiles';
 export * from './freelancerProfiles';
 export * from './jobs';
 export * from './applications';
-export * from './contracts';
+export * from './contracts/index';
 export * from './chat';
