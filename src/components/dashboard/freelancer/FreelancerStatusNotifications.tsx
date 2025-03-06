@@ -1,21 +1,31 @@
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, X, XCircle } from 'lucide-react';
+import { CheckCircle, X, XCircle, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface StatusNotificationProps {
   recentStatusChanges: any[];
+  recentInquiries?: any[];
   onDismiss: (applicationId: string) => void;
+  onDismissInquiry?: (inquiryId: string) => void;
+  onAcceptInquiry?: (inquiry: any) => void;
+  onRejectInquiry?: (inquiry: any) => void;
 }
 
 export function FreelancerStatusNotifications({ 
   recentStatusChanges, 
-  onDismiss 
+  recentInquiries = [],
+  onDismiss,
+  onDismissInquiry,
+  onAcceptInquiry,
+  onRejectInquiry
 }: StatusNotificationProps) {
   const navigate = useNavigate();
   
-  if (recentStatusChanges.length === 0) {
+  const hasNotifications = recentStatusChanges.length > 0 || recentInquiries.length > 0;
+  
+  if (!hasNotifications) {
     return null;
   }
   
@@ -54,6 +64,46 @@ export function FreelancerStatusNotifications({
             >
               {app.status === 'accepted' ? 'View Contract' : 'Find Similar Jobs'}
             </Button>
+          </AlertDescription>
+        </Alert>
+      ))}
+
+      {recentInquiries.filter(inq => inq.status === 'pending').map(inquiry => (
+        <Alert key={inquiry.id} className="relative">
+          {onDismissInquiry && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="absolute right-1 top-1 h-6 w-6 rounded-full p-0"
+              onClick={() => onDismissInquiry(inquiry.id)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+          <MessageCircle className="h-4 w-4" />
+          <AlertTitle>
+            Project Inquiry from {inquiry.client_name || 'a client'}
+          </AlertTitle>
+          <AlertDescription>
+            <p className="line-clamp-2 mb-2">{inquiry.project_description}</p>
+            {onAcceptInquiry && onRejectInquiry && (
+              <div className="flex gap-2 mt-2">
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={() => onAcceptInquiry(inquiry)}
+                >
+                  Accept
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onRejectInquiry(inquiry)}
+                >
+                  Decline
+                </Button>
+              </div>
+            )}
           </AlertDescription>
         </Alert>
       ))}

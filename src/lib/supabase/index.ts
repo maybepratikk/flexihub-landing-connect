@@ -8,3 +8,4 @@ export * from './jobs/index';
 export * from './applications';
 export * from './contracts/index';
 export * from './chat';
+export * from './inquiries';

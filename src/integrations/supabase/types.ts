@@ -419,6 +419,36 @@ export type Database = {
         }
         Relationships: []
       }
+      project_inquiries: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          freelancer_id: string
+          id: string
+          project_description: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          freelancer_id: string
+          id?: string
+          project_description: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          freelancer_id?: string
+          id?: string
+          project_description?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       project_submissions: {
         Row: {
           client_id: string
@@ -471,7 +501,22 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      project_inquiries_with_profiles: {
+        Row: {
+          client_avatar: string | null
+          client_id: string | null
+          client_name: string | null
+          created_at: string | null
+          freelancer_avatar: string | null
+          freelancer_id: string | null
+          freelancer_name: string | null
+          id: string | null
+          project_description: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       is_profile_owner: {

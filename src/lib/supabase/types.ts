@@ -123,6 +123,21 @@ export interface Contract {
   };
 }
 
+// Add ProjectInquiry interface
+export interface ProjectInquiry {
+  id: string;
+  client_id: string;
+  freelancer_id: string;
+  project_description: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  created_at?: string;
+  updated_at?: string;
+  client_name?: string;
+  client_avatar?: string;
+  freelancer_name?: string;
+  freelancer_avatar?: string;
+}
+
 // Add ChatMessage interface
 export interface ChatMessage {
   id: string;

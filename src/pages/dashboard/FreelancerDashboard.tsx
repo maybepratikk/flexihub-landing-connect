@@ -2,7 +2,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getFreelancerProfile, getFreelancerApplications, getFreelancerContracts } from '@/lib/supabase';
+import { 
+  getFreelancerProfile, 
+  getFreelancerApplications, 
+  getFreelancerContracts,
+  getFreelancerInquiries 
+} from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 import {
   FreelancerDashboardHeader,
@@ -13,6 +18,7 @@ import {
   FreelancerLoadingState,
   FreelancerEmptyState
 } from '@/components/dashboard/freelancer';
+import { FreelancerInquiryNotifications } from '@/components/dashboard/freelancer/FreelancerInquiryNotifications';
 
 export function FreelancerDashboard() {
   const { user } = useAuth();
@@ -21,6 +27,7 @@ export function FreelancerDashboard() {
   const [profile, setProfile] = useState<any>(null);
   const [applications, setApplications] = useState<any[]>([]);
   const [contracts, setContracts] = useState<any[]>([]);
+  const [inquiries, setInquiries] = useState<any[]>([]);
   
   const loadData = useCallback(async () => {
     if (!user) {
@@ -48,6 +55,12 @@ export function FreelancerDashboard() {
       const freelancerContracts = await getFreelancerContracts(user.id);
       console.log("FreelancerDashboard - Contracts loaded:", freelancerContracts);
       setContracts(freelancerContracts);
+      
+      // Get freelancer's inquiries
+      console.log("FreelancerDashboard - Fetching inquiries for user:", user.id);
+      const freelancerInquiries = await getFreelancerInquiries(user.id);
+      console.log("FreelancerDashboard - Inquiries loaded:", freelancerInquiries);
+      setInquiries(freelancerInquiries);
     } catch (error) {
       console.error('Error loading freelancer dashboard data:', error);
       toast({
@@ -78,10 +91,21 @@ export function FreelancerDashboard() {
   const acceptedApplications = applications?.filter(app => app.status === 'accepted')?.length || 0;
   const rejectedApplications = applications?.filter(app => app.status === 'rejected')?.length || 0;
   const activeContracts = contracts?.filter(contract => contract.status === 'active')?.length || 0;
+  const pendingInquiries = inquiries?.filter(inq => inq.status === 'pending')?.length || 0;
   
   return (
     <div className="space-y-8">
       <FreelancerDashboardHeader />
+      
+      {pendingInquiries > 0 && (
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-3">Project Inquiries ({pendingInquiries})</h2>
+          <FreelancerInquiryNotifications 
+            inquiries={inquiries} 
+            onUpdate={loadData} 
+          />
+        </div>
+      )}
       
       <FreelancerStatsCards 
         pendingApplications={pendingApplications}
