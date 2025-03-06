@@ -11,9 +11,13 @@ export const getNavLinks = (user: User | ExtendedUser | null) => {
   }
   
   // Handle both ExtendedUser and regular User types
-  const userType = 'user_metadata' in user 
-    ? user.user_metadata?.user_type 
-    : user.user_type;
+  let userType: string | undefined;
+  
+  if ('user_metadata' in user && user.user_metadata) {
+    userType = user.user_metadata.user_type;
+  } else if ('user_type' in user) {
+    userType = user.user_type;
+  }
   
   if (userType === 'client') {
     return [

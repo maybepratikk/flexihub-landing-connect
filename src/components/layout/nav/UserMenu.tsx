@@ -34,7 +34,9 @@ export function UserMenu({ user, onSignOut }: UserMenuProps) {
   // Type guard to safely access user email
   const userEmail = 'email' in user && user.email 
     ? user.email 
-    : ('user_metadata' in user && user.user_metadata?.email) || '';
+    : ('user_metadata' in user && typeof user.user_metadata === 'object' && user.user_metadata !== null) 
+      ? (user.user_metadata as any).email || ''
+      : '';
 
   return (
     <DropdownMenu>
