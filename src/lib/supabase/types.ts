@@ -137,3 +137,31 @@ export interface ChatMessage {
     avatar_url?: string;
   };
 }
+
+// Add ProjectSubmission interface for project submissions
+export interface ProjectSubmission {
+  id: string;
+  contract_id: string;
+  freelancer_id: string;
+  client_id: string;
+  submission_notes?: string;
+  submission_files?: string[];
+  submission_date?: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  feedback?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Add Payment interface for payments
+export interface Payment {
+  id: string;
+  contract_id: string;
+  client_id: string;
+  freelancer_id: string;
+  amount: number;
+  status: 'pending' | 'completed' | 'failed';
+  payment_date?: string;
+  created_at?: string;
+  updated_at?: string;
+}

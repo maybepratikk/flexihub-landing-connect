@@ -5,7 +5,11 @@ import { AuthContext } from '@/contexts/AuthContext';
 import { 
   getContractById,
   Contract,
-  Job // Import Job type
+  Job, // Import Job type
+  ProjectSubmission,
+  getProjectSubmissionsByContract,
+  updateProjectSubmission,
+  updateContractStatus
 } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,12 +19,39 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { ChatInterface } from '@/components/chat/ChatInterface';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { 
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
+
+import { ProjectSubmissionForm } from '@/components/projects/ProjectSubmissionForm';
+import { ProjectSubmissionDetails } from '@/components/projects/ProjectSubmissionDetails';
+import { PaymentForm } from '@/components/payments/PaymentForm';
 
 export default function ContractPage() {
   const { contractId } = useParams<{ contractId: string }>();
   const { user } = useContext(AuthContext);
   const [contract, setContract] = useState<Contract | null>(null);
   const [loading, setLoading] = useState(true);
+  const [projectSubmissions, setProjectSubmissions] = useState<ProjectSubmission[]>([]);
+  const [showSubmissionForm, setShowSubmissionForm] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [currentSubmission, setCurrentSubmission] = useState<ProjectSubmission | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -46,6 +77,13 @@ export default function ContractPage() {
           if (isAuthorized) {
             console.log('User authorized to view contract');
             setContract(fetchedContract);
+            
+            // Fetch project submissions for this contract
+            const submissions = await getProjectSubmissionsByContract(contractId);
+            setProjectSubmissions(submissions);
+            if (submissions.length > 0) {
+              setCurrentSubmission(submissions[0]); // Set the most recent submission
+            }
           } else {
             // Redirect if not authorized
             console.log('User not authorized to view contract');
@@ -81,6 +119,146 @@ export default function ContractPage() {
     fetchContract();
   }, [contractId, user, navigate, toast]);
 
+  const handleSubmitProject = (submission: ProjectSubmission) => {
+    setProjectSubmissions([submission, ...projectSubmissions]);
+    setCurrentSubmission(submission);
+    setShowSubmissionForm(false);
+    
+    // Refresh contract to get updated status
+    if (contractId) {
+      getContractById(contractId).then(updatedContract => {
+        if (updatedContract) {
+          setContract(updatedContract);
+        }
+      });
+    }
+  };
+
+  const handleAcceptSubmission = async () => {
+    if (!currentSubmission) return;
+    
+    try {
+      const updatedSubmission = await updateProjectSubmission(
+        currentSubmission.id,
+        'accepted'
+      );
+      
+      if (updatedSubmission) {
+        // Update local state
+        setProjectSubmissions(submissions => 
+          submissions.map(s => s.id === updatedSubmission.id ? updatedSubmission : s)
+        );
+        setCurrentSubmission(updatedSubmission);
+        
+        // Refresh contract to get updated status
+        if (contractId) {
+          const updatedContract = await getContractById(contractId);
+          if (updatedContract) {
+            setContract(updatedContract);
+          }
+        }
+        
+        toast({
+          title: "Submission Accepted",
+          description: "The project has been marked as completed.",
+          variant: "default",
+        });
+        
+        // Show payment form
+        setShowPaymentForm(true);
+      }
+    } catch (error) {
+      console.error('Error accepting submission:', error);
+      toast({
+        title: "Error",
+        description: "There was a problem accepting this submission.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRejectSubmission = async () => {
+    if (!currentSubmission || !feedbackText) return;
+    
+    try {
+      const updatedSubmission = await updateProjectSubmission(
+        currentSubmission.id,
+        'rejected',
+        feedbackText
+      );
+      
+      if (updatedSubmission) {
+        // Update local state
+        setProjectSubmissions(submissions => 
+          submissions.map(s => s.id === updatedSubmission.id ? updatedSubmission : s)
+        );
+        setCurrentSubmission(updatedSubmission);
+        
+        // Refresh contract to get updated status
+        if (contractId) {
+          const updatedContract = await getContractById(contractId);
+          if (updatedContract) {
+            setContract(updatedContract);
+          }
+        }
+        
+        // Close dialog and reset form
+        setRejectDialogOpen(false);
+        setFeedbackText('');
+        
+        toast({
+          title: "Feedback Sent",
+          description: "Your feedback has been sent to the freelancer.",
+          variant: "default",
+        });
+      }
+    } catch (error) {
+      console.error('Error rejecting submission:', error);
+      toast({
+        title: "Error",
+        description: "There was a problem sending your feedback.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePaymentSuccess = () => {
+    setShowPaymentForm(false);
+    toast({
+      title: "Payment Successful",
+      description: "Thank you for your payment. The freelancer has been notified.",
+      variant: "default",
+    });
+  };
+
+  // Handle contract termination
+  const handleTerminateContract = async () => {
+    if (!contract) return;
+    
+    try {
+      await updateContractStatus(contract.id, 'terminated');
+      
+      // Refresh contract data
+      const updatedContract = await getContractById(contract.id);
+      if (updatedContract) {
+        setContract(updatedContract);
+      }
+      
+      toast({
+        title: "Contract Terminated",
+        description: "The contract has been terminated.",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Error terminating contract:', error);
+      toast({
+        title: "Error",
+        description: "There was a problem terminating the contract.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto py-10 flex justify-center">
@@ -99,6 +277,7 @@ export default function ContractPage() {
   }
 
   const isClient = user?.id === contract.client_id;
+  const isFreelancer = user?.id === contract.freelancer_id;
   
   // Extract job details and make sure we handle both array and object formats
   const jobDetails = contract.jobs || {} as Job;
@@ -138,6 +317,17 @@ export default function ContractPage() {
   console.log("Job details in ContractPage:", jobDetails);
   console.log("Other party in ContractPage:", otherParty);
 
+  // Can show submission form if:
+  // 1. User is the freelancer
+  // 2. Contract is active (not completed or terminated)
+  // 3. There is no pending submission
+  const canShowSubmissionForm = isFreelancer && 
+    (contract.status === 'active') && 
+    (!currentSubmission || (currentSubmission && currentSubmission.status !== 'pending'));
+
+  // Can show submission details if there is a current submission
+  const canShowSubmissionDetails = currentSubmission !== null;
+
   return (
     <div className="container mx-auto py-10">
       <Button variant="outline" onClick={() => navigate('/dashboard')} className="mb-6">
@@ -158,8 +348,9 @@ export default function ContractPage() {
                 <h3 className="text-sm font-semibold mb-1">Status</h3>
                 <Badge variant={
                   contract.status === 'active' ? 'default' : 
-                  contract.status === 'completed' ? 'secondary' : 
-                  'secondary'
+                  contract.status === 'submitted' ? 'secondary' :
+                  contract.status === 'completed' ? 'outline' : 
+                  'destructive'
                 }>
                   {contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
                 </Badge>
@@ -225,30 +416,172 @@ export default function ContractPage() {
                   </div>
                 )}
               </div>
+              
+              {/* Contract Actions */}
+              <Separator />
+              
+              <div className="space-y-2">
+                {/* Freelancer actions */}
+                {isFreelancer && contract.status === 'active' && (
+                  <Button 
+                    onClick={() => setShowSubmissionForm(true)}
+                    className="w-full"
+                  >
+                    Submit Project
+                  </Button>
+                )}
+                
+                {/* Client actions */}
+                {isClient && contract.status === 'submitted' && currentSubmission && (
+                  <div className="space-y-2">
+                    <Button 
+                      onClick={handleAcceptSubmission}
+                      className="w-full"
+                    >
+                      Accept Submission
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setRejectDialogOpen(true)}
+                      className="w-full"
+                    >
+                      Request Changes
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Terminate contract option */}
+                {contract.status !== 'completed' && contract.status !== 'terminated' && (
+                  <Sheet>
+                    <SheetTrigger asChild>
+                      <Button 
+                        variant="destructive" 
+                        className="w-full"
+                      >
+                        Terminate Contract
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent>
+                      <SheetHeader>
+                        <SheetTitle>Terminate Contract</SheetTitle>
+                        <SheetDescription>
+                          Are you sure you want to terminate this contract? This action cannot be undone.
+                        </SheetDescription>
+                      </SheetHeader>
+                      <div className="mt-6 space-y-4">
+                        <p>
+                          Terminating this contract will:
+                        </p>
+                        <ul className="list-disc pl-5 space-y-1">
+                          <li>Immediately end the working relationship</li>
+                          <li>Mark the contract as terminated</li>
+                          <li>Close any pending submissions</li>
+                        </ul>
+                        <div className="flex justify-end gap-2 pt-4">
+                          <Button 
+                            variant="destructive" 
+                            onClick={handleTerminateContract}
+                          >
+                            Terminate Contract
+                          </Button>
+                        </div>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                )}
+              </div>
             </CardContent>
           </Card>
+          
+          {/* Project Submission */}
+          {canShowSubmissionDetails && (
+            <ProjectSubmissionDetails 
+              submission={currentSubmission} 
+              isClient={isClient}
+              onAccept={handleAcceptSubmission}
+              onReject={() => setRejectDialogOpen(true)}
+              onPayment={() => setShowPaymentForm(true)}
+            />
+          )}
         </div>
         
         <div className="md:col-span-2">
-          <Card className="h-full">
-            <CardHeader className="pb-3">
-              <CardTitle>Messages</CardTitle>
-              <CardDescription>
-                Communicate with {isClient ? 'your freelancer' : 'the client'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[600px] p-0">
-              {contract && user && (
-                <ChatInterface 
-                  contractId={contract.id} 
-                  currentUserId={user.id}
-                  otherPartyName={otherParty?.full_name || 'User'}
+          {/* Project Submission Form */}
+          {showSubmissionForm ? (
+            <Card>
+              <CardContent className="pt-6">
+                <ProjectSubmissionForm 
+                  contract={contract}
+                  onSubmitSuccess={handleSubmitProject}
+                  onCancel={() => setShowSubmissionForm(false)}
                 />
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ) : showPaymentForm ? (
+            <Card>
+              <CardContent className="pt-6">
+                <PaymentForm 
+                  contract={contract}
+                  onPaymentSuccess={handlePaymentSuccess}
+                  onCancel={() => setShowPaymentForm(false)}
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="h-full">
+              <CardHeader className="pb-3">
+                <CardTitle>Messages</CardTitle>
+                <CardDescription>
+                  Communicate with {isClient ? 'your freelancer' : 'the client'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-[600px] p-0">
+                {contract && user && (
+                  <ChatInterface 
+                    contractId={contract.id} 
+                    currentUserId={user.id}
+                    otherPartyName={otherParty?.full_name || 'User'}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
+      
+      {/* Rejection Dialog */}
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Request Changes</DialogTitle>
+            <DialogDescription>
+              Provide feedback to the freelancer about what needs to be changed or improved.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Textarea
+              placeholder="Please describe what changes or improvements are needed..."
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+              className="min-h-[150px]"
+            />
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setRejectDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleRejectSubmission}
+                disabled={!feedbackText}
+              >
+                Send Feedback
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

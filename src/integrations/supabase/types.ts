@@ -348,6 +348,50 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount: number
+          client_id: string
+          contract_id: string
+          created_at: string | null
+          freelancer_id: string
+          id: string
+          payment_date: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          contract_id: string
+          created_at?: string | null
+          freelancer_id: string
+          id?: string
+          payment_date?: string | null
+          status: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          contract_id?: string
+          created_at?: string | null
+          freelancer_id?: string
+          id?: string
+          payment_date?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -374,6 +418,56 @@ export type Database = {
           user_type?: string | null
         }
         Relationships: []
+      }
+      project_submissions: {
+        Row: {
+          client_id: string
+          contract_id: string
+          created_at: string | null
+          feedback: string | null
+          freelancer_id: string
+          id: string
+          status: string
+          submission_date: string | null
+          submission_files: string[] | null
+          submission_notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id: string
+          contract_id: string
+          created_at?: string | null
+          feedback?: string | null
+          freelancer_id: string
+          id?: string
+          status: string
+          submission_date?: string | null
+          submission_files?: string[] | null
+          submission_notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string
+          contract_id?: string
+          created_at?: string | null
+          feedback?: string | null
+          freelancer_id?: string
+          id?: string
+          status?: string
+          submission_date?: string | null
+          submission_files?: string[] | null
+          submission_notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_submissions_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

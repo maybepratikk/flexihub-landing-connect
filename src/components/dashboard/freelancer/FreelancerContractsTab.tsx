@@ -19,6 +19,22 @@ export function FreelancerContractsTab({ contracts }: ContractsTabProps) {
     navigate(`/contracts/${contractId}`);
   };
   
+  // Helper function to get the status badge variant
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'secondary';
+      case 'submitted':
+        return 'default';
+      case 'completed':
+        return 'outline';
+      case 'terminated':
+        return 'destructive';
+      default:
+        return 'secondary';
+    }
+  };
+  
   return (
     <Card>
       <CardHeader>
@@ -101,12 +117,9 @@ export function FreelancerContractsTab({ contracts }: ContractsTabProps) {
                       </p>
                       <div className="mt-2">
                         <Badge 
-                          variant={
-                            contract.status === 'active' ? 'secondary' : 
-                            contract.status === 'completed' ? 'outline' : 'destructive'
-                          }
+                          variant={getStatusBadgeVariant(contract.status)}
                         >
-                          {contract.status}
+                          {contract.status === 'submitted' ? 'Waiting for review' : contract.status}
                         </Badge>
                       </div>
                     </div>
