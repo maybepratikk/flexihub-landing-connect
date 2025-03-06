@@ -96,7 +96,7 @@ export function Navbar() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="font-bold text-xl">
-            FreelanceHub
+            IRL
           </Link>
 
           {/* Desktop Navigation */}

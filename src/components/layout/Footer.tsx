@@ -16,7 +16,7 @@ export function Footer() {
           {/* Column 1: Logo and Mission */}
           <div className="md:col-span-1">
             <Link to="/" className="font-bold text-xl inline-block mb-4">
-              FreelanceHub
+              IRL
             </Link>
             <p className="text-muted-foreground mb-4">
               Connecting exceptional talent with innovative opportunities in a curated environment.
@@ -107,7 +107,7 @@ export function Footer() {
 
         <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-muted-foreground">
-            © {currentYear} FreelanceHub. All rights reserved.
+            © {currentYear} IRL. All rights reserved.
           </p>
           <div className="flex items-center mt-4 md:mt-0">
             <button
