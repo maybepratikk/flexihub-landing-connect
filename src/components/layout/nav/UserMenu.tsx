@@ -31,8 +31,10 @@ export function UserMenu({ user, onSignOut }: UserMenuProps) {
     );
   }
 
-  // Get user email based on user type
-  const userEmail = 'email' in user && user.email ? user.email : user.user_metadata?.email || '';
+  // Type guard to safely access user email
+  const userEmail = 'email' in user && user.email 
+    ? user.email 
+    : ('user_metadata' in user && user.user_metadata?.email) || '';
 
   return (
     <DropdownMenu>
