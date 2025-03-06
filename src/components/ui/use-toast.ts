@@ -1,3 +1,3 @@
 
-// Direct export from the UI component
+// Direct export from the hooks implementation
 export { useToast, toast } from "@/hooks/use-toast";

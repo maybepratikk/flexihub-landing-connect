@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { 
   sendChatMessage, 
@@ -13,9 +12,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { Send, Image, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useNotification } from '@/contexts/NotificationContext';
+import { useNotifications } from '@/contexts/NotificationContext';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ChatInterfaceProps {
@@ -34,10 +33,9 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { showMessageNotification } = useNotification();
+  const { showMessageNotification } = useNotifications();
   const { user } = useAuth();
   
-  // Check if user is a freelancer
   const isFreelancer = user?.user_type === 'freelancer';
   
   useEffect(() => {
@@ -122,7 +120,6 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
       const messageText = newMessage.trim();
       setNewMessage('');
       
-      // Clear image preview after sending
       const imageToSend = selectedImage;
       setSelectedImage(null);
       setPreviewUrl(null);
@@ -154,7 +151,6 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Check if file is an image
       if (!file.type.startsWith('image/')) {
         toast({
           title: "Invalid file type",
@@ -164,7 +160,6 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
         return;
       }
       
-      // Check file size (limit to 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast({
           title: "File too large",
@@ -176,7 +171,6 @@ export function ChatInterface({ contractId, currentUserId, otherPartyName }: Cha
       
       setSelectedImage(file);
       
-      // Create preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewUrl(reader.result as string);
