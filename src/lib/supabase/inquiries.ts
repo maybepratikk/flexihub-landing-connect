@@ -1,5 +1,6 @@
 
 import { supabase } from './client';
+import { createContract } from './contracts';
 
 // Create a new project inquiry
 export async function createProjectInquiry(inquiryData: {
@@ -77,11 +78,24 @@ export async function getClientInquiries(clientId: string) {
   }
 }
 
-// Update project inquiry status (accept/reject)
+// Update project inquiry status (accept/reject) and create contract if accepted
 export async function updateInquiryStatus(inquiryId: string, status: 'accepted' | 'rejected') {
   try {
     console.log(`Updating inquiry ${inquiryId} status to ${status}`);
     
+    // First, get the full inquiry details with profiles
+    const { data: inquiryDetails, error: inquiryError } = await supabase
+      .from('project_inquiries_with_profiles')
+      .select('*')
+      .eq('id', inquiryId)
+      .single();
+    
+    if (inquiryError) {
+      console.error('Error fetching inquiry details:', inquiryError);
+      return null;
+    }
+    
+    // Update the inquiry status
     const { data, error } = await supabase
       .from('project_inquiries')
       .update({ status, updated_at: new Date().toISOString() })
@@ -95,6 +109,34 @@ export async function updateInquiryStatus(inquiryId: string, status: 'accepted' 
     }
     
     console.log("Inquiry status updated:", data);
+    
+    // If inquiry was accepted, create a contract
+    if (status === 'accepted' && inquiryDetails) {
+      console.log('Inquiry accepted, creating contract');
+      
+      // Default hourly rate if not specified
+      const defaultRate = 25;
+      
+      // Create a new contract
+      const contractData = {
+        freelancer_id: inquiryDetails.freelancer_id,
+        client_id: inquiryDetails.client_id,
+        rate: defaultRate,
+        status: 'active' as const,
+        // Create a pseudo-job entry in the contract
+        job_id: null
+      };
+      
+      const newContract = await createContract(contractData);
+      console.log('Contract created from inquiry:', newContract);
+      
+      // Return both the updated inquiry and the new contract
+      return {
+        ...data,
+        contract: newContract
+      };
+    }
+    
     return data;
   } catch (err) {
     console.error('Exception in updateInquiryStatus:', err);

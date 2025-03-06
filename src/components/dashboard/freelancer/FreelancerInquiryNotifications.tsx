@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, X, MessageCircle, XCircle } from 'lucide-react';
 import { updateInquiryStatus } from '@/lib/supabase';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Dialog, 
   DialogContent, 
@@ -36,15 +35,23 @@ export function FreelancerInquiryNotifications({
   
   const handleAccept = async (inquiry: any) => {
     try {
-      const updated = await updateInquiryStatus(inquiry.id, 'accepted');
-      if (updated) {
+      const result = await updateInquiryStatus(inquiry.id, 'accepted');
+      
+      if (result) {
         toast({
           title: "Inquiry Accepted",
-          description: "You've accepted the project inquiry. You can now chat with the client.",
+          description: "You've accepted the project inquiry. A contract has been created and you can now chat with the client.",
         });
+        
         onUpdate();
-        // Navigate to messages or create contract page
-        navigate(`/messages?client_id=${inquiry.client_id}`);
+        
+        // If we have a contract in the result, navigate directly to it
+        if (result.contract && result.contract.id) {
+          navigate(`/contracts/${result.contract.id}`);
+        } else {
+          // Otherwise just navigate to messages view
+          navigate(`/messages`);
+        }
       }
     } catch (error) {
       console.error("Error accepting inquiry:", error);
