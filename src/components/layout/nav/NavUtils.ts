@@ -1,15 +1,19 @@
 
 import { User } from '@/lib/supabase/types';
+import { ExtendedUser } from '@/contexts/AuthContext';
 
 // Get navigation links based on user type
-export const getNavLinks = (user: User | null) => {
+export const getNavLinks = (user: User | ExtendedUser | null) => {
   const commonLinks: { name: string; href: string }[] = [];
   
   if (!user) {
     return commonLinks;
   }
   
-  const userType = user?.user_metadata?.user_type;
+  // Handle both ExtendedUser and regular User types
+  const userType = 'user_metadata' in user 
+    ? user.user_metadata?.user_type 
+    : user.user_type;
   
   if (userType === 'client') {
     return [

@@ -2,11 +2,12 @@
 import { Link } from 'react-router-dom';
 import { MessageSquare } from 'lucide-react';
 import { User } from '@/lib/supabase/types';
+import { ExtendedUser } from '@/contexts/AuthContext';
 
 interface MobileMenuProps {
   isOpen: boolean;
   navLinks: { name: string; href: string }[];
-  user: User | null;
+  user: User | ExtendedUser | null;
   onSignOut: (e: React.MouseEvent) => Promise<void>;
 }
 

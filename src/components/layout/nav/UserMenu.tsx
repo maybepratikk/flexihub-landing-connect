@@ -10,9 +10,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { User } from '@/lib/supabase/types';
+import { ExtendedUser } from '@/contexts/AuthContext';
 
 interface UserMenuProps {
-  user: User | null;
+  user: User | ExtendedUser | null;
   onSignOut: (e: React.MouseEvent) => Promise<void>;
 }
 
@@ -30,6 +31,9 @@ export function UserMenu({ user, onSignOut }: UserMenuProps) {
     );
   }
 
+  // Get user email based on user type
+  const userEmail = 'email' in user && user.email ? user.email : user.user_metadata?.email || '';
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -40,7 +44,7 @@ export function UserMenu({ user, onSignOut }: UserMenuProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <div className="px-2 py-1.5 text-sm font-medium">
-          {user.email}
+          {userEmail}
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
