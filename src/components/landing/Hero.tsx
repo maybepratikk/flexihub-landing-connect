@@ -75,9 +75,6 @@ export function Hero() {
             <Button asChild size="lg" className="text-lg btn-scale">
               <Link to="/signup">Get Started</Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="text-lg btn-scale">
-              <Link to="/how-it-works">Learn More</Link>
-            </Button>
           </motion.div>
         </motion.div>
 

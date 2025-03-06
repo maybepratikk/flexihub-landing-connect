@@ -30,9 +30,6 @@ export function CTA() {
             <Button asChild size="lg" className="text-lg btn-scale">
               <Link to="/signup">Create Free Account</Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="text-lg btn-scale">
-              <Link to="/how-it-works">Explore the Platform</Link>
-            </Button>
           </div>
         </motion.div>
       </div>

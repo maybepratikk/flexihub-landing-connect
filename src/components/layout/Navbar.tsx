@@ -30,7 +30,7 @@ export function Navbar() {
 
   // Define navigation links based on user type
   const getNavLinks = () => {
-    const commonLinks = [{ name: 'How it Works', href: '/how-it-works' }];
+    const commonLinks = [];
     
     if (!user) {
       return commonLinks;

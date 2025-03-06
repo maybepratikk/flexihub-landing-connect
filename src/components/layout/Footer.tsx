@@ -28,11 +28,6 @@ export function Footer() {
             <h3 className="font-semibold text-lg mb-4">Platform</h3>
             <ul className="space-y-3">
               <li>
-                <Link to="/how-it-works" className="text-muted-foreground hover:text-foreground hover-transition">
-                  How it Works
-                </Link>
-              </li>
-              <li>
                 <Link to="/find-talent" className="text-muted-foreground hover:text-foreground hover-transition">
                   Find Talent
                 </Link>
