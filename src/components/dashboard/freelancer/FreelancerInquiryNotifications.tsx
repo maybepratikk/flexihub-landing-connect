@@ -26,6 +26,7 @@ export function FreelancerInquiryNotifications({
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedInquiry, setSelectedInquiry] = useState<any>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   const pendingInquiries = inquiries.filter(inq => inq.status === 'pending');
   
@@ -34,10 +35,14 @@ export function FreelancerInquiryNotifications({
   }
   
   const handleAccept = async (inquiry: any) => {
+    setIsProcessing(true);
     try {
+      console.log("Accepting inquiry:", inquiry.id);
       const result = await updateInquiryStatus(inquiry.id, 'accepted');
       
       if (result) {
+        console.log("Inquiry accepted with result:", result);
+        
         toast({
           title: "Inquiry Accepted",
           description: "You've accepted the project inquiry. A contract has been created and you can now chat with the client.",
@@ -47,11 +52,20 @@ export function FreelancerInquiryNotifications({
         
         // If we have a contract in the result, navigate directly to it
         if (result.contract && result.contract.id) {
+          console.log("Navigating to new contract:", result.contract.id);
           navigate(`/contracts/${result.contract.id}`);
         } else {
           // Otherwise just navigate to messages view
+          console.log("Contract not found in result, navigating to messages view");
           navigate(`/messages`);
         }
+      } else {
+        console.error("No result returned from updateInquiryStatus");
+        toast({
+          title: "Error",
+          description: "There was a problem accepting the inquiry. Please try again.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error accepting inquiry:", error);
@@ -60,18 +74,30 @@ export function FreelancerInquiryNotifications({
         description: "Failed to accept the inquiry. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsProcessing(false);
     }
   };
   
   const handleReject = async (inquiry: any) => {
+    setIsProcessing(true);
     try {
+      console.log("Rejecting inquiry:", inquiry.id);
       const updated = await updateInquiryStatus(inquiry.id, 'rejected');
       if (updated) {
+        console.log("Inquiry rejected successfully");
         toast({
           title: "Inquiry Rejected",
           description: "You've rejected the project inquiry.",
         });
         onUpdate();
+      } else {
+        console.error("No result returned from updateInquiryStatus");
+        toast({
+          title: "Error",
+          description: "There was a problem rejecting the inquiry. Please try again.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error rejecting inquiry:", error);
@@ -80,6 +106,8 @@ export function FreelancerInquiryNotifications({
         description: "Failed to reject the inquiry. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsProcessing(false);
     }
   };
   
@@ -112,13 +140,15 @@ export function FreelancerInquiryNotifications({
                 size="sm"
                 variant="default"
                 onClick={() => handleAccept(inquiry)}
+                disabled={isProcessing}
               >
-                Accept
+                {isProcessing ? "Processing..." : "Accept"}
               </Button>
               <Button
                 size="sm"
                 variant="destructive"
                 onClick={() => handleReject(inquiry)}
+                disabled={isProcessing}
               >
                 Decline
               </Button>
@@ -153,6 +183,7 @@ export function FreelancerInquiryNotifications({
                   handleReject(selectedInquiry);
                   setSelectedInquiry(null);
                 }}
+                disabled={isProcessing}
               >
                 Decline
               </Button>
@@ -161,6 +192,7 @@ export function FreelancerInquiryNotifications({
                   handleAccept(selectedInquiry);
                   setSelectedInquiry(null);
                 }}
+                disabled={isProcessing}
               >
                 Accept
               </Button>

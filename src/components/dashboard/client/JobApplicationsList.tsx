@@ -1,4 +1,3 @@
-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -12,8 +11,10 @@ import {
   fixSpecificJob,
   checkExistingContract
 } from '@/lib/supabase';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useState } from 'react';
+import { supabase } from '@/lib/supabase/client';
 
 interface JobApplicationsListProps {
   jobId: string;
@@ -32,6 +33,7 @@ export function JobApplicationsList({
 }: JobApplicationsListProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
 
   const handleUpdateStatus = async (jobId: string, applicationId: string, status: 'accepted' | 'rejected', applicantId: string, rate: number) => {
     try {
