@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, X, MessageCircle, XCircle } from 'lucide-react';
+import { CheckCircle, X, MessageCircle, XCircle, Loader2 } from 'lucide-react';
 import { updateInquiryStatus } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -27,6 +28,7 @@ export function FreelancerInquiryNotifications({
   const { toast } = useToast();
   const [selectedInquiry, setSelectedInquiry] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingInquiryId, setProcessingInquiryId] = useState<string | null>(null);
   
   const pendingInquiries = inquiries.filter(inq => inq.status === 'pending');
   
@@ -35,6 +37,7 @@ export function FreelancerInquiryNotifications({
   }
   
   const handleAccept = async (inquiry: any) => {
+    setProcessingInquiryId(inquiry.id);
     setIsProcessing(true);
     try {
       console.log("Accepting inquiry:", inquiry.id);
@@ -76,10 +79,12 @@ export function FreelancerInquiryNotifications({
       });
     } finally {
       setIsProcessing(false);
+      setProcessingInquiryId(null);
     }
   };
   
   const handleReject = async (inquiry: any) => {
+    setProcessingInquiryId(inquiry.id);
     setIsProcessing(true);
     try {
       console.log("Rejecting inquiry:", inquiry.id);
@@ -108,6 +113,7 @@ export function FreelancerInquiryNotifications({
       });
     } finally {
       setIsProcessing(false);
+      setProcessingInquiryId(null);
     }
   };
   
@@ -142,7 +148,12 @@ export function FreelancerInquiryNotifications({
                 onClick={() => handleAccept(inquiry)}
                 disabled={isProcessing}
               >
-                {isProcessing ? "Processing..." : "Accept"}
+                {isProcessing && processingInquiryId === inquiry.id ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : "Accept"}
               </Button>
               <Button
                 size="sm"
@@ -185,7 +196,12 @@ export function FreelancerInquiryNotifications({
                 }}
                 disabled={isProcessing}
               >
-                Decline
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : "Decline"}
               </Button>
               <Button
                 onClick={() => {
@@ -194,7 +210,12 @@ export function FreelancerInquiryNotifications({
                 }}
                 disabled={isProcessing}
               >
-                Accept
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : "Accept"}
               </Button>
             </DialogFooter>
           </DialogContent>

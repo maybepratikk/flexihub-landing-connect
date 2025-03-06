@@ -119,54 +119,61 @@ export async function updateInquiryStatus(inquiryId: string, status: 'accepted' 
       // Default hourly rate if not specified
       const defaultRate = 25;
       
-      // Create a new contract
-      const contractData = {
-        freelancer_id: inquiryDetails.freelancer_id,
-        client_id: inquiryDetails.client_id,
-        rate: defaultRate,
-        status: 'active' as const,
-        // We'll create a dummy/virtual job for this contract
-        job_id: null
-      };
-      
-      const newContract = await createContract(contractData);
-      console.log('Contract created from inquiry:', newContract);
-      
-      if (!newContract) {
-        console.error('Failed to create contract from inquiry');
+      try {
+        // Create a new contract with proper error handling
+        const contractData = {
+          freelancer_id: inquiryDetails.freelancer_id,
+          client_id: inquiryDetails.client_id,
+          rate: defaultRate,
+          status: 'active' as const,
+          // We'll create a dummy/virtual job for this inquiry
+          job_id: null
+        };
+        
+        const newContract = await createContract(contractData);
+        console.log('Contract created from inquiry:', newContract);
+        
+        if (!newContract) {
+          console.error('Failed to create contract from inquiry');
+          return data;
+        }
+        
+        // Create an initial message in the chat
+        if (newContract.id) {
+          try {
+            // Send welcome message to start the conversation
+            const welcomeMessage = `Hello! Let's discuss the project: ${inquiryDetails.project_description}`;
+            
+            const { data: messageData, error: messageError } = await supabase
+              .from('chat_messages')
+              .insert({
+                contract_id: newContract.id,
+                sender_id: inquiryDetails.client_id, // Message is from the client
+                message: welcomeMessage,
+                read: false
+              })
+              .select()
+              .maybeSingle();
+              
+            if (messageError) {
+              console.error('Error creating initial chat message:', messageError);
+            } else {
+              console.log('Initial chat message created:', messageData);
+            }
+          } catch (chatErr) {
+            console.error('Exception creating initial chat message:', chatErr);
+          }
+        }
+        
+        // Return both the updated inquiry and the new contract
+        return {
+          ...data,
+          contract: newContract
+        };
+      } catch (contractErr) {
+        console.error('Exception creating contract from inquiry:', contractErr);
         return data;
       }
-      
-      // Create an initial message in the chat
-      if (newContract.id) {
-        try {
-          // Send welcome message to start the conversation
-          const { data: messageData, error: messageError } = await supabase
-            .from('chat_messages')
-            .insert({
-              contract_id: newContract.id,
-              sender_id: inquiryDetails.client_id, // Message is from the client
-              message: `Hello! Let's discuss the project: ${inquiryDetails.project_description}`,
-              read: false
-            })
-            .select()
-            .maybeSingle();
-            
-          if (messageError) {
-            console.error('Error creating initial chat message:', messageError);
-          } else {
-            console.log('Initial chat message created:', messageData);
-          }
-        } catch (chatErr) {
-          console.error('Exception creating initial chat message:', chatErr);
-        }
-      }
-      
-      // Return both the updated inquiry and the new contract
-      return {
-        ...data,
-        contract: newContract
-      };
     }
     
     return data;

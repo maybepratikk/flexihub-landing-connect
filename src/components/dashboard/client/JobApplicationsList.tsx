@@ -1,7 +1,8 @@
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { NavigateFunction } from 'react-router-dom';
 import { 
   updateApplicationStatus, 
@@ -34,6 +35,7 @@ export function JobApplicationsList({
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [processingApplicationId, setProcessingApplicationId] = useState<string | null>(null);
 
   const handleUpdateStatus = async (jobId: string, applicationId: string, status: 'accepted' | 'rejected', applicantId: string, rate: number) => {
     try {
@@ -41,6 +43,9 @@ export function JobApplicationsList({
         throw new Error('User not authenticated');
       }
 
+      setProcessingApplicationId(applicationId);
+      setLoading(true);
+      
       console.log(`JobApplicationsList - Updating application ${applicationId} to ${status} for job ${jobId}`);
       
       // First check if this application is already processed
@@ -70,9 +75,11 @@ export function JobApplicationsList({
         
         // Check if a contract already exists for this job and freelancer
         const existingContract = await checkExistingContract(jobId, applicantId);
+        let contractId = null;
         
         if (existingContract) {
           console.log('Contract already exists:', existingContract);
+          contractId = existingContract.id;
           toast({
             title: "Contract exists",
             description: "A contract already exists for this job and freelancer.",
@@ -96,7 +103,44 @@ export function JobApplicationsList({
             throw new Error('Failed to create contract');
           }
           
+          contractId = newContract.id;
           console.log('Contract created successfully:', newContract);
+
+          // Create an initial message in the chat
+          if (newContract.id) {
+            try {
+              // Get application/job details to reference in the welcome message
+              const { data: jobData } = await supabase
+                .from('jobs')
+                .select('title, description')
+                .eq('id', jobId)
+                .maybeSingle();
+
+              // Send welcome message to start the conversation
+              const welcomeMessage = jobData 
+                ? `Hello! Let's discuss the job "${jobData.title}": ${jobData.description}`
+                : `Hello! Let's discuss the job details.`;
+              
+              const { data: messageData, error: messageError } = await supabase
+                .from('chat_messages')
+                .insert({
+                  contract_id: newContract.id,
+                  sender_id: user.id, // Message is from the client
+                  message: welcomeMessage,
+                  read: false
+                })
+                .select()
+                .maybeSingle();
+                
+              if (messageError) {
+                console.error('Error creating initial chat message:', messageError);
+              } else {
+                console.log('Initial chat message created:', messageData);
+              }
+            } catch (chatErr) {
+              console.error('Exception creating initial chat message:', chatErr);
+            }
+          }
           
           toast({
             title: "Application accepted",
@@ -120,6 +164,13 @@ export function JobApplicationsList({
         if (updatedJob.title === "Testing @1 am" || updatedApplication.jobs?.title === "Testing @1 am") {
           console.log("Special handling for Testing @1 am job");
           await fixSpecificJob("Testing @1 am");
+        }
+        
+        // If a contract was created or found, navigate to it
+        if (contractId) {
+          setTimeout(() => {
+            navigate(`/contracts/${contractId}`);
+          }, 1000);
         }
       } else {
         toast({
@@ -145,6 +196,9 @@ export function JobApplicationsList({
         description: "Failed to update application status. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
+      setProcessingApplicationId(null);
     }
   };
 
@@ -187,8 +241,14 @@ export function JobApplicationsList({
                         application.freelancer_id,
                         application.proposed_rate
                       )}
+                      disabled={loading}
                     >
-                      <XCircle className="h-4 w-4 mr-1" /> Reject
+                      {loading && processingApplicationId === application.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                      ) : (
+                        <XCircle className="h-4 w-4 mr-1" />
+                      )}
+                      Reject
                     </Button>
                     <Button 
                       size="sm"
@@ -199,8 +259,14 @@ export function JobApplicationsList({
                         application.freelancer_id,
                         application.proposed_rate
                       )}
+                      disabled={loading}
                     >
-                      <CheckCircle className="h-4 w-4 mr-1" /> Accept
+                      {loading && processingApplicationId === application.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                      )}
+                      Accept
                     </Button>
                   </div>
                 ) : (
