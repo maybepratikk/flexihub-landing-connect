@@ -1,302 +1,136 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { ChatMessage } from '@/lib/supabase/types';
-import { MessageNotification } from '@/components/notifications/MessageNotification';
-import { InquiryNotification } from '@/components/notifications/InquiryNotification';
-import { useAuth } from './AuthContext';
-import { supabase } from '@/lib/supabase';
-import { toast } from '@/components/ui/use-toast';
-import { updateInquiryStatus } from '@/lib/supabase';
-import { useNavigate } from 'react-router-dom';
 
-interface NotificationContextType {
-  recentApplications: any[];
-  dismissNotification: (applicationId: string) => void;
-}
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase/client';
+import { useAuth } from './AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { ProjectInquiry } from '@/lib/supabase/types';
+import { getFreelancerInquiries } from '@/lib/supabase/inquiries';
+
+type NotificationContextType = {
+  showInquiryNotification: (inquiry: ProjectInquiry) => void;
+  showMessageNotification: (message: any) => void;
+  hideNotification: () => void;
+  latestInquiry: ProjectInquiry | null;
+  inquiryVisible: boolean;
+};
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-export function NotificationProvider({ children }: { children: ReactNode }) {
+export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [recentApplications, setRecentApplications] = useState<any[]>([]);
-  const [recentMessages, setRecentMessages] = useState<any[]>([]);
-  const [recentInquiries, setRecentInquiries] = useState<any[]>([]);
-  const [lastMessageSeen, setLastMessageSeen] = useState<string | null>(null);
-  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
-  const [showMessageNotification, setShowMessageNotification] = useState(false);
-  const [currentInquiryIndex, setCurrentInquiryIndex] = useState(0);
-  const [showInquiryNotification, setShowInquiryNotification] = useState(false);
+  const { toast } = useToast();
+  const [latestInquiry, setLatestInquiry] = useState<ProjectInquiry | null>(null);
+  const [inquiryVisible, setInquiryVisible] = useState(false);
+
+  const showInquiryNotification = (inquiry: ProjectInquiry) => {
+    setLatestInquiry(inquiry);
+    setInquiryVisible(true);
+  };
   
-  const handleNewApplicationStatus = useCallback((application: any) => {
-    if (application && (application.status === 'accepted' || application.status === 'rejected')) {
-      setRecentApplications(prev => {
-        if (prev.some(app => app.id === application.id)) {
-          return prev;
-        }
-        return [...prev, application];
-      });
-    }
-  }, []);
-  
-  const handleNewChatMessage = useCallback((message: any) => {
-    if (message.sender_id === user?.id) {
-      return;
-    }
-    
-    setRecentMessages(prev => {
-      if (!prev.some(msg => msg.id === message.id)) {
-        return [...prev, message];
-      }
-      return prev;
+  const showMessageNotification = (message: any) => {
+    // Handle message notifications
+    toast({
+      title: "New Message",
+      description: `${message.profiles?.full_name || 'Someone'} sent you a message`,
     });
-    
-    if (currentMessageIndex === 0) {
-      setShowMessageNotification(true);
-      
-      setTimeout(() => {
-        setShowMessageNotification(false);
-      }, 5000);
-    }
-  }, [user?.id, currentMessageIndex]);
-  
-  const handleNewProjectInquiry = useCallback((inquiry: any) => {
-    if (user?.user_metadata?.user_type !== 'freelancer') {
-      return;
-    }
-    
-    if (inquiry.freelancer_id === user?.id && inquiry.status === 'pending') {
-      setRecentInquiries(prev => {
-        if (!prev.some(inq => inq.id === inquiry.id)) {
-          return [...prev, inquiry];
-        }
-        return prev;
-      });
-      
-      if (currentInquiryIndex === 0) {
-        setShowInquiryNotification(true);
-        
-        setTimeout(() => {
-          setShowInquiryNotification(false);
-        }, 5000);
-      }
-    }
-  }, [user?.id, user?.user_metadata?.user_type, currentInquiryIndex]);
-  
+  };
+
+  const hideNotification = () => {
+    setInquiryVisible(false);
+    setTimeout(() => {
+      setLatestInquiry(null);
+    }, 300);
+  };
+
   useEffect(() => {
-    if (!user) return;
-    
-    const applicationsChannel = supabase
-      .channel('job_applications_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'job_applications',
-          filter: `freelancer_id=eq.${user.id}`
-        },
-        (payload: any) => {
-          supabase
-            .from('job_applications')
-            .select('*, jobs(*)')
-            .eq('id', payload.new.id)
-            .single()
-            .then(({ data, error }) => {
-              if (!error && data) {
-                handleNewApplicationStatus(data);
-              }
-            });
+    if (!user || user.user_type !== 'freelancer') return;
+
+    // Initial fetch of pending inquiries
+    const fetchPendingInquiries = async () => {
+      try {
+        const inquiries = await getFreelancerInquiries(user.id);
+        const pendingInquiries = inquiries.filter(
+          (inquiry: ProjectInquiry) => inquiry.status === 'pending'
+        );
+        
+        if (pendingInquiries.length > 0) {
+          // Show the most recent pending inquiry
+          showInquiryNotification(pendingInquiries[0]);
         }
-      )
-      .subscribe();
-    
-    const messagesChannel = supabase
-      .channel('chat_messages_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_messages'
-        },
-        (payload: any) => {
-          supabase
-            .from('chat_messages')
-            .select('*, profiles(*)')
-            .eq('id', payload.new.id)
-            .single()
-            .then(({ data, error }) => {
-              if (!error && data) {
-                handleNewChatMessage(data);
-              }
-            });
-        }
-      )
-      .subscribe();
-      
-    const inquiriesChannel = supabase
+      } catch (error) {
+        console.error('Error fetching pending inquiries:', error);
+      }
+    };
+
+    fetchPendingInquiries();
+
+    // Set up real-time subscription for new inquiries
+    const inquirySubscription = supabase
       .channel('project_inquiries_changes')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'project_inquiries'
+          table: 'project_inquiries',
+          filter: `freelancer_id=eq.${user.id}`,
         },
-        (payload: any) => {
-          supabase
-            .from('project_inquiries_with_profiles')
-            .select('*')
-            .eq('id', payload.new.id)
-            .single()
-            .then(({ data, error }) => {
-              if (!error && data) {
-                handleNewProjectInquiry(data);
-              }
-            });
+        async (payload) => {
+          console.log('New inquiry received:', payload);
+          
+          // Fetch the complete inquiry with profile information
+          try {
+            const { data, error } = await supabase
+              .from('project_inquiries_with_profiles')
+              .select('*')
+              .eq('id', payload.new.id)
+              .single();
+            
+            if (error) {
+              console.error('Error fetching inquiry details:', error);
+              return;
+            }
+            
+            if (data) {
+              showInquiryNotification(data);
+              
+              // Also show a toast
+              toast({
+                title: "New Project Inquiry",
+                description: `${data.client_name || 'A client'} has sent you a project inquiry.`,
+              });
+            }
+          } catch (error) {
+            console.error('Error processing new inquiry notification:', error);
+          }
         }
       )
       .subscribe();
-      
-    return () => {
-      supabase.removeChannel(applicationsChannel);
-      supabase.removeChannel(messagesChannel);
-      supabase.removeChannel(inquiriesChannel);
-    };
-  }, [user, handleNewApplicationStatus, handleNewChatMessage, handleNewProjectInquiry]);
-  
-  const handleCloseMessageNotification = useCallback(() => {
-    setShowMessageNotification(false);
-    
-    if (currentMessageIndex < recentMessages.length - 1) {
-      setCurrentMessageIndex(prev => prev + 1);
-      
-      setTimeout(() => {
-        setShowMessageNotification(true);
-      }, 500);
-    } else {
-      setCurrentMessageIndex(0);
-    }
-  }, [currentMessageIndex, recentMessages.length]);
-  
-  const handleCloseInquiryNotification = useCallback(() => {
-    setShowInquiryNotification(false);
-    
-    if (currentInquiryIndex < recentInquiries.length - 1) {
-      setCurrentInquiryIndex(prev => prev + 1);
-      
-      setTimeout(() => {
-        setShowInquiryNotification(true);
-      }, 500);
-    } else {
-      setCurrentInquiryIndex(0);
-    }
-  }, [currentInquiryIndex, recentInquiries.length]);
-  
-  const handleAcceptInquiry = useCallback(async () => {
-    if (recentInquiries.length === 0 || currentInquiryIndex >= recentInquiries.length) {
-      return;
-    }
-    
-    const inquiry = recentInquiries[currentInquiryIndex];
-    try {
-      const updated = await updateInquiryStatus(inquiry.id, 'accepted');
-      if (updated) {
-        toast({
-          title: "Inquiry Accepted",
-          description: "You've accepted the project inquiry. You can now chat with the client.",
-        });
-        
-        setRecentInquiries(prev => 
-          prev.map(inq => inq.id === inquiry.id ? { ...inq, status: 'accepted' } : inq)
-        );
-        
-        handleCloseInquiryNotification();
-        
-        navigate(`/messages?client_id=${inquiry.client_id}`);
-      }
-    } catch (error) {
-      console.error("Error accepting inquiry:", error);
-      toast({
-        title: "Error",
-        description: "Failed to accept the inquiry. Please try again.",
-        variant: "destructive",
-      });
-    }
-  }, [recentInquiries, currentInquiryIndex, handleCloseInquiryNotification, navigate]);
-  
-  const handleRejectInquiry = useCallback(async () => {
-    if (recentInquiries.length === 0 || currentInquiryIndex >= recentInquiries.length) {
-      return;
-    }
-    
-    const inquiry = recentInquiries[currentInquiryIndex];
-    try {
-      const updated = await updateInquiryStatus(inquiry.id, 'rejected');
-      if (updated) {
-        toast({
-          title: "Inquiry Rejected",
-          description: "You've rejected the project inquiry.",
-        });
-        
-        setRecentInquiries(prev => 
-          prev.map(inq => inq.id === inquiry.id ? { ...inq, status: 'rejected' } : inq)
-        );
-        
-        handleCloseInquiryNotification();
-      }
-    } catch (error) {
-      console.error("Error rejecting inquiry:", error);
-      toast({
-        title: "Error",
-        description: "Failed to reject the inquiry. Please try again.",
-        variant: "destructive",
-      });
-    }
-  }, [recentInquiries, currentInquiryIndex, handleCloseInquiryNotification]);
-  
-  const dismissNotification = useCallback((applicationId: string) => {
-    setRecentApplications(prev => prev.filter(app => app.id !== applicationId));
-  }, []);
 
-  const notificationToShow = showMessageNotification && recentMessages.length > 0 
-    ? recentMessages[currentMessageIndex] 
-    : null;
-    
-  const inquiryToShow = showInquiryNotification && recentInquiries.length > 0 && 
-                        recentInquiries[currentInquiryIndex]?.status === 'pending'
-    ? recentInquiries[currentInquiryIndex] 
-    : null;
+    return () => {
+      supabase.removeChannel(inquirySubscription);
+    };
+  }, [user, toast]);
 
   return (
-    <NotificationContext.Provider value={{ recentApplications, dismissNotification }}>
+    <NotificationContext.Provider
+      value={{
+        showInquiryNotification,
+        showMessageNotification,
+        hideNotification,
+        latestInquiry,
+        inquiryVisible,
+      }}
+    >
       {children}
-      
-      {notificationToShow && (
-        <MessageNotification
-          message={notificationToShow}
-          isVisible={showMessageNotification}
-          onClose={handleCloseMessageNotification}
-        />
-      )}
-      
-      {inquiryToShow && (
-        <InquiryNotification
-          inquiry={inquiryToShow}
-          isVisible={showInquiryNotification}
-          onClose={handleCloseInquiryNotification}
-          onAccept={handleAcceptInquiry}
-          onReject={handleRejectInquiry}
-        />
-      )}
     </NotificationContext.Provider>
   );
 }
 
-export const useNotification = () => {
+export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (context === undefined) {
-    throw new Error('useNotification must be used within a NotificationProvider');
+    throw new Error('useNotifications must be used within a NotificationProvider');
   }
   return context;
 };
