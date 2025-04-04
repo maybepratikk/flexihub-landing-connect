@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -152,16 +153,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string, adminMode = false) => {
     try {
       setLoading(true);
+      console.log(`Attempting to sign in with email: ${email}`);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Sign in error:', error);
+        throw error;
+      }
       
       console.log("Sign in successful, session:", data.session);
       
       if (adminMode) {
+        console.log("Admin mode login attempt, checking admin access");
         const { data: adminData, error: adminError } = await supabase
           .from('admin_access')
           .select('access_level')
@@ -169,6 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .maybeSingle();
           
         if (adminError || !adminData) {
+          console.error('Admin access check error:', adminError);
           toast({
             title: "Access Denied",
             description: "You don't have admin privileges.",
@@ -181,6 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         
+        console.log("Admin access confirmed:", adminData);
         const extendedUser = data.user as ExtendedUser;
         if (extendedUser.user_metadata) {
           extendedUser.user_metadata.user_type = 'admin';

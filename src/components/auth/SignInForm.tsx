@@ -39,8 +39,10 @@ export function SignInForm() {
                      ('user_type' in session.user ? session.user.user_type : null);
                      
       if (userType === 'admin') {
+        console.log('Redirecting to admin page - user is admin');
         navigate('/admin', { replace: true });
       } else {
+        console.log('Redirecting to dashboard - user is not admin');
         navigate('/dashboard', { replace: true });
       }
     }

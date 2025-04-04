@@ -13,6 +13,7 @@ export function AdminPage() {
   useEffect(() => {
     // Check if user is authenticated
     if (!loading && !user) {
+      console.log("User not authenticated, redirecting to signin");
       navigate('/signin', { replace: true });
       return;
     }
@@ -20,8 +21,12 @@ export function AdminPage() {
     // Check if user is admin
     if (!loading && user) {
       const userType = user.user_metadata?.user_type || user.user_type;
+      console.log("User type:", userType);
       if (userType !== 'admin') {
+        console.log("User is not admin, redirecting to dashboard");
         navigate('/dashboard', { replace: true });
+      } else {
+        console.log("Admin access confirmed");
       }
     }
   }, [user, loading, navigate]);

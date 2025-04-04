@@ -30,10 +30,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
+        console.log("Checking admin status for user:", user.id);
         const isAdminFromMetadata = user.user_metadata?.user_type === 'admin' || 
                                    user.user_type === 'admin';
         
         if (isAdminFromMetadata) {
+          console.log("User has admin metadata");
           setIsAdmin(true);
         }
 
@@ -50,9 +52,11 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           }
           setAccessLevel(null);
         } else if (data) {
+          console.log("User found in admin_access table:", data);
           setIsAdmin(true);
           setAccessLevel(data.access_level);
         } else if (!isAdminFromMetadata) {
+          console.log("User not found in admin_access table and no admin metadata");
           setIsAdmin(false);
           setAccessLevel(null);
         }
