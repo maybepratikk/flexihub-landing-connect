@@ -70,6 +70,18 @@ export interface JobApplication {
   contact_phone?: string;
   created_at?: string;
   updated_at?: string;
+  job?: {
+    id: string;
+    title: string;
+    description: string;
+    category: string;
+    status: string;
+  };
+  freelancer?: {
+    id: string;
+    full_name?: string;
+    avatar_url?: string;
+  };
   profiles?: {
     full_name?: string;
     avatar_url?: string;
@@ -102,7 +114,10 @@ export interface Contract {
   end_date?: string;
   created_at?: string;
   updated_at?: string;
-  jobs?: Job;
+  job?: {
+    id: string;
+    title: string;
+  };
   client?: {
     full_name?: string;
     avatar_url?: string;
@@ -110,6 +125,9 @@ export interface Contract {
   freelancer?: {
     full_name?: string;
     avatar_url?: string;
+  };
+  jobs?: {
+    title?: string;
   };
   profiles?: {
     client_id?: {

@@ -55,8 +55,8 @@ export function ApplicationsPage() {
   const filteredApplications = applications.filter(app => {
     const searchLower = searchQuery.toLowerCase();
     return (
-      app.jobs?.title?.toLowerCase().includes(searchLower) ||
-      app.profiles?.full_name?.toLowerCase().includes(searchLower) ||
+      app.job?.title?.toLowerCase().includes(searchLower) ||
+      app.freelancer?.full_name?.toLowerCase().includes(searchLower) ||
       app.status.toLowerCase().includes(searchLower)
     );
   });
@@ -145,9 +145,9 @@ export function ApplicationsPage() {
               filteredApplications.map(app => (
                 <TableRow key={app.id}>
                   <TableCell className="font-medium max-w-[200px] truncate">
-                    {app.jobs?.title || 'Unknown Job'}
+                    {app.job?.title || 'Unknown Job'}
                   </TableCell>
-                  <TableCell>{app.profiles?.full_name || 'Unknown'}</TableCell>
+                  <TableCell>{app.freelancer?.full_name || 'Unknown'}</TableCell>
                   <TableCell>${app.proposed_rate || '0'}/hr</TableCell>
                   <TableCell>
                     {app.created_at ? 

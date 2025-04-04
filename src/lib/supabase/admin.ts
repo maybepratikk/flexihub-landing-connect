@@ -23,7 +23,7 @@ export async function getAllJobs() {
   try {
     const { data, error } = await supabase
       .from('jobs')
-      .select('*, client:client_id(*)');
+      .select('*, profiles:client_id(*)');
     
     if (error) {
       console.error('Error fetching all jobs:', error);
@@ -41,7 +41,11 @@ export async function getAllApplications() {
   try {
     const { data, error } = await supabase
       .from('job_applications')
-      .select('*, job:job_id(*), freelancer:freelancer_id(*)');
+      .select(`
+        *,
+        job:job_id(*),
+        freelancer:freelancer_id(*)
+      `);
     
     if (error) {
       console.error('Error fetching all applications:', error);
@@ -59,7 +63,12 @@ export async function getAllContracts() {
   try {
     const { data, error } = await supabase
       .from('contracts')
-      .select('*, client:client_id(*), freelancer:freelancer_id(*), job:job_id(*)');
+      .select(`
+        *,
+        client:client_id(*),
+        freelancer:freelancer_id(*),
+        job:job_id(*)
+      `);
     
     if (error) {
       console.error('Error fetching all contracts:', error);
