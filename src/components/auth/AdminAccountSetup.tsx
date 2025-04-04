@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { createAdminAccount } from '@/lib/supabase/admin';
-import { Loader2, Copy, CheckCircle } from 'lucide-react';
+import { Loader2, Copy, CheckCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export function AdminAccountSetup() {
   const [isCreating, setIsCreating] = useState(false);
@@ -13,10 +14,12 @@ export function AdminAccountSetup() {
     password: string | null;
   } | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleCreateAdmin = async () => {
     setIsCreating(true);
+    setError(null);
     
     try {
       const result = await createAdminAccount();
@@ -32,11 +35,16 @@ export function AdminAccountSetup() {
           description: "Admin account created successfully",
         });
       } else {
-        toast({
-          title: "Error",
-          description: result.message || "Failed to create admin account",
-          variant: "destructive",
-        });
+        // Handle the specific error case where admin might already exist
+        if (result.message?.toLowerCase().includes('duplicate') || result.message?.toLowerCase().includes('already exists')) {
+          setError("Admin account already exists. You can use the default credentials to log in.");
+          setAdminCredentials({
+            email: "admin@example.com",
+            password: "Admin123!"
+          });
+        } else {
+          setError(result.message || "Failed to create admin account");
+        }
         
         if (result.email && result.password) {
           setAdminCredentials({
@@ -47,11 +55,7 @@ export function AdminAccountSetup() {
       }
     } catch (error: any) {
       console.error('Error creating admin:', error);
-      toast({
-        title: "Error",
-        description: error.message || "An unexpected error occurred",
-        variant: "destructive",
-      });
+      setError(error.message || "An unexpected error occurred");
     } finally {
       setIsCreating(false);
     }
@@ -76,6 +80,14 @@ export function AdminAccountSetup() {
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-6">
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
         {adminCredentials ? (
           <div className="space-y-4">
             <div className="p-4 bg-green-50 border border-green-200 rounded-md">

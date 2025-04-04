@@ -109,6 +109,27 @@ export async function checkAdminStatus(userId: string) {
 // Create a new admin account with default credentials
 export async function createAdminAccount() {
   try {
+    // First check if the admin user already exists
+    const { data: existingUser, error: checkError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', 'admin@example.com')
+      .maybeSingle();
+    
+    if (checkError) {
+      console.error('Error checking for existing admin:', checkError);
+    }
+    
+    if (existingUser) {
+      console.log('Admin user already exists');
+      return {
+        success: false,
+        message: 'Admin account already exists. You can use the default credentials to log in.',
+        email: 'admin@example.com',
+        password: 'Admin123!'
+      };
+    }
+    
     // Sign up a new admin user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: 'admin@example.com',
@@ -126,8 +147,8 @@ export async function createAdminAccount() {
       return {
         success: false,
         message: authError.message,
-        email: null,
-        password: null
+        email: 'admin@example.com',
+        password: 'Admin123!'
       };
     }
     
@@ -170,8 +191,8 @@ export async function createAdminAccount() {
     return {
       success: false,
       message: err.message || 'Unknown error',
-      email: null,
-      password: null
+      email: 'admin@example.com',
+      password: 'Admin123!'
     };
   }
 }
