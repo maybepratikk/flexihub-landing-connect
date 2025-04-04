@@ -57,7 +57,7 @@ export function JobsPage() {
       job.title?.toLowerCase().includes(searchLower) ||
       job.description?.toLowerCase().includes(searchLower) ||
       job.category?.toLowerCase().includes(searchLower) ||
-      job.client?.full_name?.toLowerCase().includes(searchLower)
+      job.profiles?.full_name?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -154,7 +154,7 @@ export function JobsPage() {
                   <TableCell className="font-medium max-w-[200px] truncate">
                     {job.title}
                   </TableCell>
-                  <TableCell>{job.client?.full_name || 'Unknown'}</TableCell>
+                  <TableCell>{job.profiles?.full_name || 'Unknown'}</TableCell>
                   <TableCell>{job.category}</TableCell>
                   <TableCell>
                     {job.budget_type === 'fixed'

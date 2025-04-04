@@ -1,10 +1,13 @@
 
-import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { useState, ReactNode } from 'react';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminHeader } from './AdminHeader';
 
-export function AdminLayout() {
+interface AdminLayoutProps {
+  children: ReactNode;
+}
+
+export function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
@@ -14,7 +17,7 @@ export function AdminLayout() {
         <AdminHeader sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         <main className="flex-1 overflow-auto p-6">
           <div className="mx-auto max-w-7xl">
-            <Outlet />
+            {children}
           </div>
         </main>
       </div>

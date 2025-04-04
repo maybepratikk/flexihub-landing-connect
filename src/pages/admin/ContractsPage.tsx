@@ -55,7 +55,7 @@ export function ContractsPage() {
   const filteredContracts = contracts.filter(contract => {
     const searchLower = searchQuery.toLowerCase();
     return (
-      contract.job?.title?.toLowerCase().includes(searchLower) ||
+      contract.jobs?.title?.toLowerCase().includes(searchLower) ||
       contract.client?.full_name?.toLowerCase().includes(searchLower) ||
       contract.freelancer?.full_name?.toLowerCase().includes(searchLower) ||
       contract.status.toLowerCase().includes(searchLower)
@@ -146,7 +146,7 @@ export function ContractsPage() {
               filteredContracts.map(contract => (
                 <TableRow key={contract.id}>
                   <TableCell className="font-medium max-w-[200px] truncate">
-                    {contract.job?.title || 'Unknown Job'}
+                    {contract.jobs?.title || 'Unknown Job'}
                   </TableCell>
                   <TableCell>{contract.client?.full_name || 'Unknown'}</TableCell>
                   <TableCell>{contract.freelancer?.full_name || 'Unknown'}</TableCell>
