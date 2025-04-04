@@ -8,8 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { MailIcon, KeyIcon, ArrowRightIcon, Loader2, ShieldIcon } from 'lucide-react';
+import { MailIcon, KeyIcon, ArrowRightIcon, Loader2, ShieldIcon, UserIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
 
 export function SignInForm() {
   const [email, setEmail] = useState('');
@@ -18,6 +19,7 @@ export function SignInForm() {
   const [adminMode, setAdminMode] = useState(false);
   const { signIn, session } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   // If user is already logged in, redirect to dashboard
   if (session) {
@@ -32,8 +34,13 @@ export function SignInForm() {
     try {
       await signIn(email, password, adminMode);
       // Note: The redirect happens in the signIn function now
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in form submission:', error);
+      toast({
+        title: "Authentication Error",
+        description: error.message || "Failed to sign in. Please check your credentials.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -49,9 +56,15 @@ export function SignInForm() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="user" className="mb-4" onValueChange={(value) => setAdminMode(value === 'admin')}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="user">User</TabsTrigger>
-            <TabsTrigger value="admin">Admin</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 mb-2">
+            <TabsTrigger value="user">
+              <UserIcon className="mr-2 h-4 w-4" />
+              User
+            </TabsTrigger>
+            <TabsTrigger value="admin">
+              <ShieldIcon className="mr-2 h-4 w-4" />
+              Admin
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="user" className="p-0 pt-2">
             <p className="text-sm text-muted-foreground text-center">Sign in as a regular user</p>
