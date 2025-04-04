@@ -10,7 +10,7 @@ export async function getContractById(contractId: string) {
       .from('contracts')
       .select(`
         *,
-        jobs:job_id(*),
+        jobs:job_id(id, title, description, budget_type),
         client:profiles!client_id(id, full_name, avatar_url, email),
         freelancer:profiles!freelancer_id(id, full_name, avatar_url, email)
       `)
@@ -40,7 +40,7 @@ export async function getContractById(contractId: string) {
         console.log(`Fetching job details separately for job_id ${fallbackData.job_id}`);
         const { data: jobData, error: jobError } = await supabase
           .from('jobs')
-          .select('*')
+          .select('id, title, description, budget_type')
           .eq('id', fallbackData.job_id)
           .maybeSingle();
           

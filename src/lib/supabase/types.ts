@@ -1,4 +1,5 @@
 
+
 export interface User {
   id: string;
   email: string;
@@ -128,6 +129,9 @@ export interface Contract {
   };
   jobs?: {
     title?: string;
+    id?: string;
+    description?: string;
+    budget_type?: string;
   };
   profiles?: {
     client_id?: {
