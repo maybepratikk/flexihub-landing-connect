@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +21,17 @@ export function SignInForm() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Auto-fill default admin credentials when in admin mode
+  useEffect(() => {
+    if (adminMode) {
+      setEmail('admin@example.com');
+      setPassword('Admin123!');
+    } else {
+      setEmail('');
+      setPassword('');
+    }
+  }, [adminMode]);
+
   // If user is already logged in, redirect to dashboard
   if (session) {
     navigate('/dashboard', { replace: true });
@@ -32,6 +43,7 @@ export function SignInForm() {
     setIsSubmitting(true);
     
     try {
+      console.log(`Signing in as ${adminMode ? 'admin' : 'regular user'} with email: ${email}`);
       await signIn(email, password, adminMode);
       // Note: The redirect happens in the signIn function now
     } catch (error: any) {
@@ -70,7 +82,10 @@ export function SignInForm() {
             <p className="text-sm text-muted-foreground text-center">Sign in as a regular user</p>
           </TabsContent>
           <TabsContent value="admin" className="p-0 pt-2">
-            <p className="text-sm text-muted-foreground text-center">Sign in with admin credentials</p>
+            <p className="text-sm text-muted-foreground text-center">
+              Sign in with admin credentials: <span className="font-mono bg-gray-100 text-xs px-1 rounded">admin@example.com</span> / 
+              <span className="font-mono bg-gray-100 text-xs px-1 rounded">Admin123!</span>
+            </p>
           </TabsContent>
         </Tabs>
 

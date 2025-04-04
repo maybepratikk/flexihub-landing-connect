@@ -22,11 +22,23 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const checkAdminStatus = async () => {
+      setLoading(true);
+      
       if (!user) {
         setIsAdmin(false);
         setAccessLevel(null);
         setLoading(false);
         return;
+      }
+
+      // First check user metadata for admin status
+      const isAdminFromMetadata = user.user_metadata?.user_type === 'admin' || 
+                                 user.user_type === 'admin';
+      
+      if (isAdminFromMetadata) {
+        console.log('Admin status found in user metadata');
+        setIsAdmin(true);
+        // Still check the database for access level
       }
 
       try {
@@ -39,24 +51,28 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
         if (error) {
           console.error('Error checking admin status:', error);
-          toast({
-            title: "Error",
-            description: "Failed to verify admin privileges",
-            variant: "destructive",
-          });
-          setIsAdmin(false);
+          if (!isAdminFromMetadata) {
+            toast({
+              title: "Error",
+              description: "Failed to verify admin privileges",
+              variant: "destructive",
+            });
+            setIsAdmin(false);
+          }
           setAccessLevel(null);
         } else if (data) {
           console.log('Admin access confirmed:', data.access_level);
           setIsAdmin(true);
           setAccessLevel(data.access_level);
-        } else {
+        } else if (!isAdminFromMetadata) {
           setIsAdmin(false);
           setAccessLevel(null);
         }
       } catch (err) {
         console.error('Exception checking admin status:', err);
-        setIsAdmin(false);
+        if (!isAdminFromMetadata) {
+          setIsAdmin(false);
+        }
         setAccessLevel(null);
       } finally {
         setLoading(false);

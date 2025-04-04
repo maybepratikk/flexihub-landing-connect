@@ -45,8 +45,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
         } else {
           console.log('Initial session fetch:', session);
+          
+          if (session?.user) {
+            // Check if user has admin privileges
+            const { data: adminAccess } = await supabase
+              .from('admin_access')
+              .select('access_level')
+              .eq('admin_id', session.user.id)
+              .maybeSingle();
+              
+            const extendedUser = session.user as ExtendedUser;
+            
+            // If user has admin privileges, add admin type to user metadata
+            if (adminAccess) {
+              if (extendedUser.user_metadata) {
+                extendedUser.user_metadata.user_type = 'admin';
+              } else {
+                extendedUser.user_metadata = { user_type: 'admin' };
+              }
+              extendedUser.user_type = 'admin';
+            }
+            
+            setUser(extendedUser);
+          } else {
+            setUser(null);
+          }
+          
           setSession(session);
-          setUser(session?.user as ExtendedUser ?? null);
         }
       } catch (err) {
         console.error('Exception in fetchSession:', err);
@@ -58,10 +83,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchSession();
 
     // Set up auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       console.log('Auth state changed:', _event, session?.user?.id);
+      
+      if (session?.user) {
+        // Check if user has admin privileges on auth state change
+        const { data: adminAccess } = await supabase
+          .from('admin_access')
+          .select('access_level')
+          .eq('admin_id', session.user.id)
+          .maybeSingle();
+          
+        const extendedUser = session.user as ExtendedUser;
+        
+        // If user has admin privileges, add admin type to user metadata
+        if (adminAccess) {
+          if (extendedUser.user_metadata) {
+            extendedUser.user_metadata.user_type = 'admin';
+          } else {
+            extendedUser.user_metadata = { user_type: 'admin' };
+          }
+          extendedUser.user_type = 'admin';
+        }
+        
+        setUser(extendedUser);
+      } else {
+        setUser(null);
+      }
+      
       setSession(session);
-      setUser(session?.user as ExtendedUser ?? null);
       setLoading(false);
     });
 

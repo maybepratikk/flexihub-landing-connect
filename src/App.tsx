@@ -2,6 +2,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AdminProvider } from './contexts/AdminContext';
 
 import { MainLayout } from './components/layout/MainLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -41,98 +42,100 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/verify" element={<VerificationSentPage />} />
-          <Route path="/signin" element={<SignInPage />} />
-          <Route path="/signup" element={<SignUpPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <AdminProvider>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/verify" element={<VerificationSentPage />} />
+            <Route path="/signin" element={<SignInPage />} />
+            <Route path="/signup" element={<SignUpPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-          {/* Admin routes */}
-          <Route path="/admin" element={
-            <AdminRoute>
-              <AdminPage />
-            </AdminRoute>
-          }>
-            <Route index element={<AdminDashboardPage />} />
-            <Route path="users" element={<UsersPage />} />
-            <Route path="jobs" element={<JobsAdminPage />} />
-            <Route path="applications" element={<ApplicationsAdminPage />} />
-            <Route path="contracts" element={<ContractsPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-          </Route>
+            {/* Admin routes */}
+            <Route path="/admin" element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
+            }>
+              <Route index element={<AdminDashboardPage />} />
+              <Route path="users" element={<UsersPage />} />
+              <Route path="jobs" element={<JobsAdminPage />} />
+              <Route path="applications" element={<ApplicationsAdminPage />} />
+              <Route path="contracts" element={<ContractsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
 
-          {/* Routes with main layout */}
-          <Route element={<MainLayout />}>
-            <Route path="/home" element={<HomePage />} />
-            
-            {/* Protected routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/jobs" element={
-              <ProtectedRoute>
-                <JobsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/jobs/:jobId" element={
-              <ProtectedRoute>
-                <JobDetailPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/jobs/:jobId/applications" element={
-              <ProtectedRoute>
-                <ApplicationsPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/post-job" element={
-              <ProtectedRoute>
-                <PostJobPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/onboarding" element={
-              <ProtectedRoute>
-                <OnboardingPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/contracts/:contractId" element={
-              <ProtectedRoute>
-                <ContractPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/messages" element={
-              <ProtectedRoute>
-                <MessagesPage />
-              </ProtectedRoute>
-            } />
-            
-            {/* Profile routes */}
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <ProfileRouter />
-              </ProtectedRoute>
-            } />
-            
-            {/* Role-specific routes */}
-            <Route path="/find-talent" element={
-              <ClientRoute>
-                <FindTalentPage />
-              </ClientRoute>
-            } />
-            <Route path="/find-projects" element={
-              <FreelancerRoute>
-                <JobsPage />
-              </FreelancerRoute>
-            } />
-            
-            {/* Fallback route */}
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-        <Toaster />
+            {/* Routes with main layout */}
+            <Route element={<MainLayout />}>
+              <Route path="/home" element={<HomePage />} />
+              
+              {/* Protected routes */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/jobs" element={
+                <ProtectedRoute>
+                  <JobsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/jobs/:jobId" element={
+                <ProtectedRoute>
+                  <JobDetailPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/jobs/:jobId/applications" element={
+                <ProtectedRoute>
+                  <ApplicationsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/post-job" element={
+                <ProtectedRoute>
+                  <PostJobPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/onboarding" element={
+                <ProtectedRoute>
+                  <OnboardingPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/contracts/:contractId" element={
+                <ProtectedRoute>
+                  <ContractPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/messages" element={
+                <ProtectedRoute>
+                  <MessagesPage />
+                </ProtectedRoute>
+              } />
+              
+              {/* Profile routes */}
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <ProfileRouter />
+                </ProtectedRoute>
+              } />
+              
+              {/* Role-specific routes */}
+              <Route path="/find-talent" element={
+                <ClientRoute>
+                  <FindTalentPage />
+                </ClientRoute>
+              } />
+              <Route path="/find-projects" element={
+                <FreelancerRoute>
+                  <JobsPage />
+                </FreelancerRoute>
+              } />
+              
+              {/* Fallback route */}
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+          <Toaster />
+        </AdminProvider>
       </AuthProvider>
     </BrowserRouter>
   );

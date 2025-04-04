@@ -6,6 +6,7 @@ import { BarChart3, Users, Briefcase, FileText, FileClock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AdminStatsCards } from '@/components/admin/AdminStatsCards';
 import { AdminRecentActivity } from '@/components/admin/AdminRecentActivity';
+import { useToast } from '@/hooks/use-toast';
 
 export function AdminDashboardPage() {
   const [usersCount, setUsersCount] = useState<number | null>(null);
@@ -13,10 +14,16 @@ export function AdminDashboardPage() {
   const [applicationsCount, setApplicationsCount] = useState<number | null>(null);
   const [contractsCount, setContractsCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
+        console.log("Loading admin dashboard data...");
+        setLoading(true);
+        setError(null);
+        
         const [users, jobs, applications, contracts] = await Promise.all([
           getAllUsers(),
           getAllJobs(),
@@ -24,19 +31,32 @@ export function AdminDashboardPage() {
           getAllContracts()
         ]);
         
+        console.log("Data loaded successfully:", {
+          users: users.length,
+          jobs: jobs.length,
+          applications: applications.length,
+          contracts: contracts.length
+        });
+        
         setUsersCount(users.length);
         setJobsCount(jobs.length);
         setApplicationsCount(applications.length);
         setContractsCount(contracts.length);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error loading admin dashboard data:", error);
+        setError(error.message || "Failed to load dashboard data");
+        toast({
+          title: "Error",
+          description: "Failed to load dashboard data. Please try again.",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
     };
 
     loadDashboardData();
-  }, []);
+  }, [toast]);
 
   const stats = [
     {
@@ -78,6 +98,28 @@ export function AdminDashboardPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
       </div>
+      
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-2">
+              <span className="text-red-600 mt-0.5">
+                <Users className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="font-medium text-red-800">Error Loading Dashboard</h3>
+                <p className="text-sm text-red-700 mt-1">{error}</p>
+                <button 
+                  className="text-sm text-red-800 hover:text-red-900 underline mt-2"
+                  onClick={() => window.location.reload()}
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
       <AdminStatsCards stats={stats} loading={loading} />
       
