@@ -81,3 +81,50 @@ export async function getAllContracts() {
     return [];
   }
 }
+
+// Check if a user has admin privileges
+export async function checkAdminStatus(userId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('admin_access')
+      .select('access_level')
+      .eq('admin_id', userId)
+      .maybeSingle();
+      
+    if (error) {
+      console.error('Error checking admin status:', error);
+      return { isAdmin: false, accessLevel: null };
+    }
+    
+    return {
+      isAdmin: !!data,
+      accessLevel: data?.access_level || null
+    };
+  } catch (err) {
+    console.error('Exception in checkAdminStatus:', err);
+    return { isAdmin: false, accessLevel: null };
+  }
+}
+
+// Create a test admin user (for development purposes)
+export async function createTestAdmin(email: string, userId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('admin_access')
+      .insert([
+        { admin_id: userId, access_level: 'standard' }
+      ])
+      .select();
+      
+    if (error) {
+      console.error('Error creating test admin:', error);
+      return false;
+    }
+    
+    console.log(`Admin privileges granted to ${email}`);
+    return true;
+  } catch (err) {
+    console.error('Exception in createTestAdmin:', err);
+    return false;
+  }
+}

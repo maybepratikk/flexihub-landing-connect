@@ -8,12 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { MailIcon, KeyIcon, ArrowRightIcon, Loader2 } from 'lucide-react';
+import { MailIcon, KeyIcon, ArrowRightIcon, Loader2, ShieldIcon } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function SignInForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [adminMode, setAdminMode] = useState(false);
   const { signIn, session } = useAuth();
   const navigate = useNavigate();
 
@@ -28,7 +30,7 @@ export function SignInForm() {
     setIsSubmitting(true);
     
     try {
-      await signIn(email, password);
+      await signIn(email, password, adminMode);
       // Note: The redirect happens in the signIn function now
     } catch (error) {
       console.error('Error in form submission:', error);
@@ -46,6 +48,19 @@ export function SignInForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <Tabs defaultValue="user" className="mb-4" onValueChange={(value) => setAdminMode(value === 'admin')}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="user">User</TabsTrigger>
+            <TabsTrigger value="admin">Admin</TabsTrigger>
+          </TabsList>
+          <TabsContent value="user" className="p-0 pt-2">
+            <p className="text-sm text-muted-foreground text-center">Sign in as a regular user</p>
+          </TabsContent>
+          <TabsContent value="admin" className="p-0 pt-2">
+            <p className="text-sm text-muted-foreground text-center">Sign in with admin credentials</p>
+          </TabsContent>
+        </Tabs>
+
         <form onSubmit={handleSignIn} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -96,6 +111,11 @@ export function SignInForm() {
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Signing in...
+              </>
+            ) : adminMode ? (
+              <>
+                <ShieldIcon className="mr-2 h-4 w-4" />
+                Sign in as Admin
               </>
             ) : (
               <>

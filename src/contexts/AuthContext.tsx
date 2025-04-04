@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -6,9 +7,9 @@ import { useToast } from '@/hooks/use-toast';
 export interface ExtendedUser extends User {
   user_metadata: {
     full_name?: string;
-    user_type?: 'freelancer' | 'client';
+    user_type?: 'freelancer' | 'client' | 'admin';
   };
-  user_type?: 'freelancer' | 'client'; // Add this property directly on the user
+  user_type?: 'freelancer' | 'client' | 'admin'; // Add this property directly on the user
 }
 
 interface AuthContextType {
@@ -16,7 +17,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, userType: string) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string, adminMode?: boolean) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 }
@@ -106,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, adminMode = false) => {
     try {
       setLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -117,6 +118,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       
       console.log("Sign in successful, session:", data.session);
+      
+      // Check if the user is trying to sign in as admin
+      if (adminMode) {
+        // Check if user has admin privileges
+        const { data: adminData, error: adminError } = await supabase
+          .from('admin_access')
+          .select('access_level')
+          .eq('admin_id', data.user.id)
+          .maybeSingle();
+          
+        if (adminError || !adminData) {
+          toast({
+            title: "Access Denied",
+            description: "You don't have admin privileges.",
+            variant: "destructive",
+          });
+          
+          // Sign out the user
+          await supabase.auth.signOut();
+          setUser(null);
+          setSession(null);
+          return;
+        }
+        
+        // Add admin info to user metadata for easy access
+        const extendedUser = data.user as ExtendedUser;
+        if (extendedUser.user_metadata) {
+          extendedUser.user_metadata.user_type = 'admin';
+        } else {
+          extendedUser.user_metadata = { user_type: 'admin' };
+        }
+        extendedUser.user_type = 'admin';
+        
+        setUser(extendedUser);
+        
+        toast({
+          title: "Admin Access Granted",
+          description: "You have signed in as an admin.",
+        });
+        
+        // Redirect to admin page
+        window.location.href = '/admin';
+        return;
+      }
       
       toast({
         title: "Welcome back!",
