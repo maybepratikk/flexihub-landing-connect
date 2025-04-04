@@ -14,6 +14,15 @@ export function AdminPage() {
     // Check if user is authenticated
     if (!loading && !user) {
       navigate('/signin', { replace: true });
+      return;
+    }
+    
+    // Check if user is admin
+    if (!loading && user) {
+      const userType = user.user_metadata?.user_type || user.user_type;
+      if (userType !== 'admin') {
+        navigate('/dashboard', { replace: true });
+      }
     }
   }, [user, loading, navigate]);
   

@@ -20,11 +20,11 @@ export function SignInForm() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Auto-fill default admin credentials when in admin mode
+  // Auto-fill admin credentials when in admin mode
   useEffect(() => {
     if (adminMode) {
-      setEmail('admin@example.com');
-      setPassword('Admin123!');
+      setEmail('pratikadmin@gmail.com');
+      setPassword('Pratik@12');
     } else {
       setEmail('');
       setPassword('');
@@ -97,8 +97,7 @@ export function SignInForm() {
           </TabsContent>
           <TabsContent value="admin" className="p-0 pt-2">
             <p className="text-sm text-muted-foreground text-center">
-              Sign in with admin credentials: <span className="font-mono bg-gray-100 text-xs px-1 rounded">admin@example.com</span> / 
-              <span className="font-mono bg-gray-100 text-xs px-1 rounded">Admin123!</span>
+              Sign in with admin credentials
             </p>
           </TabsContent>
         </Tabs>
