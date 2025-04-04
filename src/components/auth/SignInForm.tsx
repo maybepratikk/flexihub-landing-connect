@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,11 +31,20 @@ export function SignInForm() {
     }
   }, [adminMode]);
 
-  // If user is already logged in, redirect to dashboard
-  if (session) {
-    navigate('/dashboard', { replace: true });
-    return null;
-  }
+  // If user is already logged in, redirect to appropriate page
+  useEffect(() => {
+    if (session) {
+      // Check if the user is an admin based on metadata
+      const userType = session.user?.user_metadata?.user_type || 
+                     ('user_type' in session.user ? session.user.user_type : null);
+                     
+      if (userType === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [session, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +53,8 @@ export function SignInForm() {
     try {
       console.log(`Signing in as ${adminMode ? 'admin' : 'regular user'} with email: ${email}`);
       await signIn(email, password, adminMode);
-      // Note: The redirect happens in the signIn function now
+      
+      // Redirect will be handled by the useEffect that watches the session
     } catch (error: any) {
       console.error('Error in form submission:', error);
       toast({
@@ -57,6 +66,11 @@ export function SignInForm() {
       setIsSubmitting(false);
     }
   };
+
+  // If already logged in, we'll redirect via useEffect, but don't render this component
+  if (session) {
+    return null;
+  }
 
   return (
     <Card className="w-full max-w-md mx-auto glass animate-fade-in">

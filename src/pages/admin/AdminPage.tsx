@@ -17,6 +17,7 @@ export function AdminPage() {
     }
   }, [user, loading, navigate]);
   
+  // Simplified loading state
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
