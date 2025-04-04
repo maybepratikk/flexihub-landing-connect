@@ -109,27 +109,48 @@ export async function checkAdminStatus(userId: string) {
 // Create a new admin account with default credentials
 export async function createAdminAccount() {
   try {
+    console.log("Starting admin account creation process");
     // First check if the admin user already exists
-    const { data: existingUser, error: checkError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', 'admin@example.com')
-      .maybeSingle();
+    const { data: existingUser, error: checkError } = await supabase.auth
+      .signInWithPassword({
+        email: 'admin@example.com',
+        password: 'Admin123!'
+      });
     
-    if (checkError) {
-      console.error('Error checking for existing admin:', checkError);
-    }
-    
-    if (existingUser) {
-      console.log('Admin user already exists');
+    if (existingUser && existingUser.user) {
+      console.log('Admin user already exists and can be signed in');
+      
+      // Check if admin access is granted
+      const { data: adminAccess } = await supabase
+        .from('admin_access')
+        .select('*')
+        .eq('admin_id', existingUser.user.id)
+        .maybeSingle();
+      
+      if (!adminAccess) {
+        // Grant admin privileges if not already granted
+        const { error: accessError } = await supabase
+          .from('admin_access')
+          .insert([
+            { admin_id: existingUser.user.id, access_level: 'standard' }
+          ]);
+          
+        if (accessError) {
+          console.error('Error granting admin privileges to existing user:', accessError);
+        } else {
+          console.log('Admin privileges granted to existing user');
+        }
+      }
+      
       return {
-        success: false,
+        success: true,
         message: 'Admin account already exists. You can use the default credentials to log in.',
         email: 'admin@example.com',
         password: 'Admin123!'
       };
     }
     
+    console.log("Creating new admin user account");
     // Sign up a new admin user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: 'admin@example.com',
@@ -138,7 +159,8 @@ export async function createAdminAccount() {
         data: {
           full_name: 'Admin User',
           user_type: 'admin'
-        }
+        },
+        emailRedirectTo: `${window.location.origin}/signin`
       }
     });
     
@@ -162,6 +184,8 @@ export async function createAdminAccount() {
       };
     }
     
+    console.log("Admin user created successfully, now granting admin privileges");
+    
     // Grant admin privileges
     const { error } = await supabase
       .from('admin_access')
@@ -173,13 +197,13 @@ export async function createAdminAccount() {
       console.error('Error granting admin privileges:', error);
       return {
         success: false,
-        message: error.message,
+        message: `Admin user created but failed to grant admin privileges: ${error.message}`,
         email: 'admin@example.com',
         password: 'Admin123!'
       };
     }
     
-    console.log(`Admin account created: admin@example.com`);
+    console.log(`Admin account created successfully: admin@example.com`);
     return {
       success: true,
       message: 'Admin account created successfully',

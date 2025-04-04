@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { createAdminAccount } from '@/lib/supabase/admin';
-import { Loader2, Copy, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, Copy, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -22,7 +22,9 @@ export function AdminAccountSetup() {
     setError(null);
     
     try {
+      console.log("Starting admin creation process...");
       const result = await createAdminAccount();
+      console.log("Admin creation result:", result);
       
       if (result.success) {
         setAdminCredentials({
@@ -32,30 +34,37 @@ export function AdminAccountSetup() {
         
         toast({
           title: "Success",
-          description: "Admin account created successfully",
+          description: result.message || "Admin account created successfully",
         });
       } else {
-        // Handle the specific error case where admin might already exist
-        if (result.message?.toLowerCase().includes('duplicate') || result.message?.toLowerCase().includes('already exists')) {
-          setError("Admin account already exists. You can use the default credentials to log in.");
+        // Handle existing admin case
+        if (result.message?.toLowerCase().includes('already exists')) {
           setAdminCredentials({
-            email: "admin@example.com",
-            password: "Admin123!"
+            email: 'admin@example.com',
+            password: 'Admin123!'
+          });
+          toast({
+            title: "Information",
+            description: "Admin account already exists. You can use the default credentials to log in.",
           });
         } else {
+          // Handle error
           setError(result.message || "Failed to create admin account");
-        }
-        
-        if (result.email && result.password) {
-          setAdminCredentials({
-            email: result.email,
-            password: result.password
+          toast({
+            title: "Error",
+            description: result.message || "Failed to create admin account",
+            variant: "destructive",
           });
         }
       }
     } catch (error: any) {
       console.error('Error creating admin:', error);
       setError(error.message || "An unexpected error occurred");
+      toast({
+        title: "Error",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
     } finally {
       setIsCreating(false);
     }
@@ -71,6 +80,12 @@ export function AdminAccountSetup() {
     setTimeout(() => setCopied(null), 2000);
   };
 
+  const retryAdminCreation = () => {
+    setAdminCredentials(null);
+    setError(null);
+    handleCreateAdmin();
+  };
+
   return (
     <Card className="w-full max-w-md mx-auto border-amber-200 bg-amber-50/30">
       <CardHeader className="bg-amber-100/50 border-b border-amber-200">
@@ -84,14 +99,25 @@ export function AdminAccountSetup() {
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription className="space-y-2">
+              <p>{error}</p>
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={retryAdminCreation}
+                className="mt-2"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Retry
+              </Button>
+            </AlertDescription>
           </Alert>
         )}
         
         {adminCredentials ? (
           <div className="space-y-4">
             <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-              <h3 className="font-medium text-green-800 mb-2">Admin Account Created</h3>
+              <h3 className="font-medium text-green-800 mb-2">Admin Account Available</h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Email:</span> 
