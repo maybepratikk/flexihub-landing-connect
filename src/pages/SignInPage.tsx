@@ -1,15 +1,25 @@
 
 import { SignInForm } from '@/components/auth/SignInForm';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 const SignInPage = () => {
-  const { session } = useAuth();
+  const { session, user } = useAuth();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || '/dashboard';
 
-  // If user is already logged in, redirect to dashboard
-  if (session) {
-    console.log("User already logged in, redirecting to dashboard");
-    return <Navigate to="/dashboard" replace />;
+  // If user is already logged in, redirect to appropriate page
+  if (session && user) {
+    // Check if the user is an admin based on metadata
+    const userType = user.user_metadata?.user_type || user.user_type;
+    
+    if (userType === 'admin') {
+      console.log("SignInPage: Redirecting to admin - user is admin");
+      return <Navigate to="/admin" replace />;
+    }
+    
+    console.log("SignInPage: Redirecting to dashboard - user already logged in");
+    return <Navigate to={from} replace />;
   }
 
   return (

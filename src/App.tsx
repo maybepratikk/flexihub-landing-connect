@@ -1,7 +1,6 @@
-
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
 import { AdminProvider } from './contexts/AdminContext';
 
 import { MainLayout } from './components/layout/MainLayout';
@@ -29,7 +28,6 @@ import MessagesPage from './pages/MessagesPage';
 import FreelancerProfilePage from './pages/FreelancerProfilePage';
 import ClientProfilePage from './pages/ClientProfilePage';
 
-// Import Admin Pages
 import AdminPage from './pages/admin/AdminPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import UsersPage from './pages/admin/UsersPage';
@@ -42,106 +40,99 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AdminProvider>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/verify" element={<VerificationSentPage />} />
-            <Route path="/signin" element={<SignInPage />} />
-            <Route path="/signup" element={<SignUpPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/verify" element={<VerificationSentPage />} />
+          <Route path="/signin" element={<SignInPage />} />
+          <Route path="/signup" element={<SignUpPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-            {/* Admin routes */}
-            <Route path="/admin" element={
-              <AdminRoute>
-                <AdminPage />
-              </AdminRoute>
-            }>
-              <Route index element={<AdminDashboardPage />} />
-              <Route path="users" element={<UsersPage />} />
-              <Route path="jobs" element={<JobsAdminPage />} />
-              <Route path="applications" element={<ApplicationsAdminPage />} />
-              <Route path="contracts" element={<ContractsPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-            </Route>
+          {/* Admin routes - wrapping with AdminProvider moved to AdminPage component */}
+          <Route path="/admin" element={<AdminPage />}>
+            <Route index element={<AdminDashboardPage />} />
+            <Route path="users" element={<UsersPage />} />
+            <Route path="jobs" element={<JobsAdminPage />} />
+            <Route path="applications" element={<ApplicationsAdminPage />} />
+            <Route path="contracts" element={<ContractsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
 
-            {/* Routes with main layout */}
-            <Route element={<MainLayout />}>
-              <Route path="/home" element={<HomePage />} />
-              
-              {/* Protected routes */}
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <DashboardPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/jobs" element={
-                <ProtectedRoute>
-                  <JobsPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/jobs/:jobId" element={
-                <ProtectedRoute>
-                  <JobDetailPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/jobs/:jobId/applications" element={
-                <ProtectedRoute>
-                  <ApplicationsPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/post-job" element={
-                <ProtectedRoute>
-                  <PostJobPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/onboarding" element={
-                <ProtectedRoute>
-                  <OnboardingPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/contracts/:contractId" element={
-                <ProtectedRoute>
-                  <ContractPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/messages" element={
-                <ProtectedRoute>
-                  <MessagesPage />
-                </ProtectedRoute>
-              } />
-              
-              {/* Profile routes */}
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <ProfileRouter />
-                </ProtectedRoute>
-              } />
-              
-              {/* Role-specific routes */}
-              <Route path="/find-talent" element={
-                <ClientRoute>
-                  <FindTalentPage />
-                </ClientRoute>
-              } />
-              <Route path="/find-projects" element={
-                <FreelancerRoute>
-                  <JobsPage />
-                </FreelancerRoute>
-              } />
-              
-              {/* Fallback route */}
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
-          <Toaster />
-        </AdminProvider>
+          {/* Routes with main layout */}
+          <Route element={<MainLayout />}>
+            <Route path="/home" element={<HomePage />} />
+            
+            {/* Protected routes */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/jobs" element={
+              <ProtectedRoute>
+                <JobsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/jobs/:jobId" element={
+              <ProtectedRoute>
+                <JobDetailPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/jobs/:jobId/applications" element={
+              <ProtectedRoute>
+                <ApplicationsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/post-job" element={
+              <ProtectedRoute>
+                <PostJobPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/onboarding" element={
+              <ProtectedRoute>
+                <OnboardingPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/contracts/:contractId" element={
+              <ProtectedRoute>
+                <ContractPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/messages" element={
+              <ProtectedRoute>
+                <MessagesPage />
+              </ProtectedRoute>
+            } />
+            
+            {/* Profile routes */}
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <ProfileRouter />
+              </ProtectedRoute>
+            } />
+            
+            {/* Role-specific routes */}
+            <Route path="/find-talent" element={
+              <ClientRoute>
+                <FindTalentPage />
+              </ClientRoute>
+            } />
+            <Route path="/find-projects" element={
+              <FreelancerRoute>
+                <JobsPage />
+              </FreelancerRoute>
+            } />
+            
+            {/* Fallback route */}
+            <Route path="*" element={<NotFound />} />
+          </Route>
+        </Routes>
+        <Toaster />
       </AuthProvider>
     </BrowserRouter>
   );
 }
 
-// Profile Router component to direct to the correct profile page based on user type
 function ProfileRouter() {
   const { user } = useAuth();
   
@@ -149,7 +140,6 @@ function ProfileRouter() {
     return <Navigate to="/signin" replace />;
   }
   
-  // Get user type from user metadata or from the user object directly
   const userType = user.user_metadata?.user_type || user.user_type;
   
   if (userType === 'freelancer') {
@@ -157,7 +147,6 @@ function ProfileRouter() {
   } else if (userType === 'client') {
     return <ClientProfilePage />;
   } else {
-    // Fallback for users without a specified type
     return <Navigate to="/dashboard" replace />;
   }
 }

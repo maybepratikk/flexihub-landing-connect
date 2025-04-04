@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/client'; // Fix import path
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -31,6 +31,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
       try {
         console.log("Checking admin status for user:", user.id);
+        
+        // First check metadata for quick result
         const isAdminFromMetadata = user.user_metadata?.user_type === 'admin' || 
                                    user.user_type === 'admin';
         
@@ -39,6 +41,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           setIsAdmin(true);
         }
 
+        // Then verify from database
         const { data, error } = await supabase
           .from('admin_access')
           .select('access_level')
@@ -100,6 +103,7 @@ export const AdminGuard = ({ children }: { children: React.ReactNode }) => {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <span className="ml-3">Verifying admin access...</span>
       </div>
     );
   }

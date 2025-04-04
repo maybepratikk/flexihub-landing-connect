@@ -16,7 +16,7 @@ export function SignInForm() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [adminMode, setAdminMode] = useState(false);
-  const { signIn, session } = useAuth();
+  const { signIn, session, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -31,12 +31,13 @@ export function SignInForm() {
     }
   }, [adminMode]);
 
-  // If user is already logged in, redirect to appropriate page
+  // Handle navigation after successful login
   useEffect(() => {
-    if (session) {
+    if (session && user) {
       // Check if the user is an admin based on metadata
-      const userType = session.user?.user_metadata?.user_type || 
-                     ('user_type' in session.user ? session.user.user_type : null);
+      const userType = user.user_metadata?.user_type || user.user_type;
+      
+      console.log('SignInForm: Session detected, userType:', userType);
                      
       if (userType === 'admin') {
         console.log('Redirecting to admin page - user is admin');
@@ -46,10 +47,15 @@ export function SignInForm() {
         navigate('/dashboard', { replace: true });
       }
     }
-  }, [session, navigate]);
+  }, [session, user, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isSubmitting) {
+      return; // Prevent multiple submissions
+    }
+    
     setIsSubmitting(true);
     
     try {
@@ -69,9 +75,14 @@ export function SignInForm() {
     }
   };
 
-  // If already logged in, we'll redirect via useEffect, but don't render this component
+  // If already logged in, we'll redirect via useEffect
   if (session) {
-    return null;
+    return (
+      <div className="flex justify-center items-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Redirecting...</span>
+      </div>
+    );
   }
 
   return (
