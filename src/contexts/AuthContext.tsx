@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client'; // Fix the import path
@@ -35,14 +34,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const fetchSession = async () => {
       try {
         // First set up the auth state change listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
           console.log('Auth state changed:', _event, newSession?.user?.id);
           
           if (newSession?.user) {
             // Handle user session update without additional DB calls in the listener
             // Save the full session object and user
             setSession(newSession);
-            setUser(newSession.user as ExtendedUser);
+            const extendedUser = newSession.user as ExtendedUser;
+            
+            // Don't make DB calls in the listener to prevent deadlocks
+            setUser(extendedUser);
+            
+            // Check admin status separately using setTimeout to avoid blocking
+            setTimeout(async () => {
+              try {
+                const { data: adminAccess } = await supabase
+                  .from('admin_access')
+                  .select('access_level')
+                  .eq('admin_id', newSession.user.id)
+                  .maybeSingle();
+                  
+                if (adminAccess) {
+                  console.log("User has admin access:", adminAccess);
+                  // Update the user object with admin type
+                  setUser(currentUser => {
+                    if (!currentUser) return null;
+                    
+                    const updatedUser = { ...currentUser };
+                    if (updatedUser.user_metadata) {
+                      updatedUser.user_metadata.user_type = 'admin';
+                    } else {
+                      updatedUser.user_metadata = { user_type: 'admin' };
+                    }
+                    updatedUser.user_type = 'admin';
+                    return updatedUser;
+                  });
+                }
+              } catch (adminCheckError) {
+                console.error("Error checking admin status:", adminCheckError);
+              }
+            }, 0);
           } else {
             setUser(null);
             setSession(null);
@@ -231,9 +263,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       toast({
         title: "Error signing in",
-        description: error.message,
+        description: error.message || "Invalid email or password. Please try again.",
         variant: "destructive",
       });
+      throw error; // Re-throw to allow the component to handle it
     } finally {
       setLoading(false);
     }

@@ -4,43 +4,104 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminProvider } from '@/contexts/AdminContext';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabase/client';
 
 export function AdminPage() {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  const [verifyingAdmin, setVerifyingAdmin] = useState(true);
   
   useEffect(() => {
-    // Check if user is authenticated
-    if (!loading && !user) {
-      console.log("User not authenticated, redirecting to signin");
-      navigate('/signin', { replace: true });
-      return;
-    }
-    
-    // Check if user is admin
-    if (!loading && user) {
-      const userType = user.user_metadata?.user_type || user.user_type;
-      console.log("AdminPage - User type:", userType);
+    const checkAdminAccess = async () => {
+      // Reset state when this effect runs
+      setVerifyingAdmin(true);
+      setIsAuthorized(null);
       
-      if (userType !== 'admin') {
-        console.log("User is not admin, redirecting to dashboard");
-        navigate('/dashboard', { replace: true });
-        setIsAuthorized(false);
-      } else {
-        console.log("Admin access confirmed");
-        setIsAuthorized(true);
+      // Check if user is authenticated
+      if (!authLoading && !user) {
+        console.log("User not authenticated, redirecting to signin");
+        navigate('/signin', { replace: true });
+        setVerifyingAdmin(false);
+        return;
       }
-    }
-  }, [user, loading, navigate]);
+      
+      // Wait for auth loading to complete
+      if (authLoading) {
+        return;
+      }
+      
+      // Check if user is admin
+      if (user) {
+        try {
+          const userType = user.user_metadata?.user_type || user.user_type;
+          console.log("AdminPage - User type:", userType);
+          
+          if (userType === 'admin') {
+            console.log("Admin metadata found, verifying in database");
+            
+            // Double-check in the admin_access table
+            const { data: adminAccess, error } = await supabase
+              .from('admin_access')
+              .select('access_level')
+              .eq('admin_id', user.id)
+              .maybeSingle();
+              
+            if (error) {
+              console.error("Error checking admin access:", error);
+              setIsAuthorized(false);
+              setVerifyingAdmin(false);
+              navigate('/dashboard', { replace: true });
+              return;
+            }
+            
+            if (adminAccess) {
+              console.log("Admin access confirmed in database");
+              setIsAuthorized(true);
+            } else {
+              console.log("Admin metadata exists but no database record found");
+              
+              // Try to add the admin access if it's missing
+              const { error: insertError } = await supabase
+                .rpc('set_admin', { 
+                  target_user_id: user.id,
+                  admin_level: 'standard'
+                });
+                
+              if (insertError) {
+                console.error("Error creating admin access:", insertError);
+                setIsAuthorized(false);
+                navigate('/dashboard', { replace: true });
+              } else {
+                console.log("Admin access granted successfully");
+                setIsAuthorized(true);
+              }
+            }
+          } else {
+            console.log("User is not admin, redirecting to dashboard");
+            setIsAuthorized(false);
+            navigate('/dashboard', { replace: true });
+          }
+        } catch (error) {
+          console.error("Error during admin verification:", error);
+          setIsAuthorized(false);
+        } finally {
+          setVerifyingAdmin(false);
+        }
+      }
+    };
+    
+    checkAdminAccess();
+  }, [user, authLoading, navigate]);
   
   // Show loading state while we check authorization
-  if (loading || isAuthorized === null) {
+  if (authLoading || verifyingAdmin || isAuthorized === null) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <span className="ml-3">Verifying admin access...</span>
+      <div className="flex flex-col justify-center items-center h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <span className="text-lg font-medium">Verifying admin access...</span>
+        <p className="text-sm text-muted-foreground mt-2">Please wait while we confirm your permissions</p>
       </div>
     );
   }
@@ -60,9 +121,12 @@ export function AdminPage() {
   return (
     <div className="flex justify-center items-center h-screen">
       <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-        <h2 className="text-xl font-semibold text-red-700">Access Denied</h2>
+        <div className="flex items-center mb-4">
+          <AlertCircle className="h-6 w-6 text-red-600 mr-2" />
+          <h2 className="text-xl font-semibold text-red-700">Access Denied</h2>
+        </div>
         <p className="mt-2 text-gray-600">
-          You don't have permission to access the admin area.
+          You don't have permission to access the admin area. Please contact the system administrator if you believe this is an error.
         </p>
         <button 
           onClick={() => navigate('/signin', { replace: true })}
