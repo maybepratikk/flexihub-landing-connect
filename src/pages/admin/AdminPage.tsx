@@ -6,10 +6,12 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export function AdminPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [verifyingAdmin, setVerifyingAdmin] = useState(true);
   
@@ -35,13 +37,18 @@ export function AdminPage() {
       // Check if user is admin
       if (user) {
         try {
+          console.log("AdminPage - Checking user:", user);
+          console.log("User metadata:", user.user_metadata);
+          console.log("User type:", user.user_type);
+          
+          // First check if admin from user type
           const userType = user.user_metadata?.user_type || user.user_type;
           console.log("AdminPage - User type:", userType);
           
           if (userType === 'admin') {
             console.log("Admin metadata found, verifying in database");
             
-            // Double-check in the admin_access table
+            // Verify in the admin_access table
             const { data: adminAccess, error } = await supabase
               .from('admin_access')
               .select('access_level')
@@ -50,6 +57,11 @@ export function AdminPage() {
               
             if (error) {
               console.error("Error checking admin access:", error);
+              toast({
+                title: "Error",
+                description: "Failed to verify admin access. Please try again.",
+                variant: "destructive",
+              });
               setIsAuthorized(false);
               setVerifyingAdmin(false);
               navigate('/dashboard', { replace: true });
@@ -57,43 +69,65 @@ export function AdminPage() {
             }
             
             if (adminAccess) {
-              console.log("Admin access confirmed in database");
+              console.log("Admin access confirmed in database:", adminAccess);
               setIsAuthorized(true);
+              setVerifyingAdmin(false);
             } else {
               console.log("Admin metadata exists but no database record found");
               
               // Try to add the admin access if it's missing
               const { error: insertError } = await supabase
-                .rpc('set_admin', { 
-                  target_user_id: user.id,
-                  admin_level: 'standard'
-                });
+                .from('admin_access')
+                .insert([{ 
+                  admin_id: user.id,
+                  access_level: 'standard'
+                }]);
                 
               if (insertError) {
                 console.error("Error creating admin access:", insertError);
+                toast({
+                  title: "Access Denied",
+                  description: "Unable to grant admin access. Please contact support.",
+                  variant: "destructive",
+                });
                 setIsAuthorized(false);
                 navigate('/dashboard', { replace: true });
               } else {
                 console.log("Admin access granted successfully");
+                toast({
+                  title: "Admin Access",
+                  description: "Admin access granted successfully.",
+                });
                 setIsAuthorized(true);
               }
+              setVerifyingAdmin(false);
             }
           } else {
             console.log("User is not admin, redirecting to dashboard");
+            toast({
+              title: "Access Denied",
+              description: "You don't have permission to access the admin area.",
+              variant: "destructive",
+            });
             setIsAuthorized(false);
+            setVerifyingAdmin(false);
             navigate('/dashboard', { replace: true });
           }
         } catch (error) {
           console.error("Error during admin verification:", error);
+          toast({
+            title: "Error",
+            description: "An error occurred while verifying admin access.",
+            variant: "destructive",
+          });
           setIsAuthorized(false);
-        } finally {
           setVerifyingAdmin(false);
         }
       }
     };
     
     checkAdminAccess();
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, toast]);
   
   // Show loading state while we check authorization
   if (authLoading || verifyingAdmin || isAuthorized === null) {

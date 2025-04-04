@@ -54,65 +54,6 @@ export function SignInForm() {
     }
   }, [session, user, navigate]);
 
-  // Helper to create an admin user if it doesn't exist
-  const createAdminUserIfNeeded = async () => {
-    try {
-      // Try to sign up the admin user
-      const { data, error } = await supabase.auth.signUp({
-        email: 'pratikadmin@gmail.com',
-        password: 'Pratik@12',
-        options: {
-          data: {
-            full_name: 'Pratik Admin',
-            user_type: 'admin'
-          }
-        }
-      });
-      
-      if (error && error.message !== 'User already registered') {
-        throw error;
-      }
-      
-      // Get the user ID (either from new signup or existing user)
-      let userId;
-      if (data && data.user) {
-        userId = data.user.id;
-      } else {
-        // Try to get the user ID from an existing user
-        const { data: userData, error: userError } = await supabase.auth.signInWithPassword({
-          email: 'pratikadmin@gmail.com',
-          password: 'Pratik@12'
-        });
-        
-        if (userError) {
-          throw userError;
-        }
-        
-        if (userData && userData.user) {
-          userId = userData.user.id;
-          
-          // Immediately sign out as we don't want to actually log in yet
-          await supabase.auth.signOut();
-        }
-      }
-      
-      if (userId) {
-        // Grant admin access
-        await supabase.rpc('set_admin', {
-          target_user_id: userId,
-          admin_level: 'standard'
-        });
-        
-        return true;
-      }
-      
-      return false;
-    } catch (err) {
-      console.error('Error creating admin user:', err);
-      return false;
-    }
-  };
-
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -124,11 +65,6 @@ export function SignInForm() {
     
     try {
       console.log(`Signing in as ${adminMode ? 'admin' : 'regular user'} with email: ${email}`);
-      
-      if (adminMode && email === 'pratikadmin@gmail.com') {
-        // Try to create the admin user if it doesn't exist
-        await createAdminUserIfNeeded();
-      }
       
       // Proceed with sign in
       await signIn(email, password, adminMode);

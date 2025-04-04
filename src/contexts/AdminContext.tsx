@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { supabase } from '@/lib/supabase/client'; // Fix import path
+import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -36,11 +36,6 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         const isAdminFromMetadata = user.user_metadata?.user_type === 'admin' || 
                                    user.user_type === 'admin';
         
-        if (isAdminFromMetadata) {
-          console.log("User has admin metadata");
-          setIsAdmin(true);
-        }
-
         // Then verify from database
         const { data, error } = await supabase
           .from('admin_access')
@@ -50,16 +45,34 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
         if (error) {
           console.error('Error checking admin status:', error);
-          if (!isAdminFromMetadata) {
-            setIsAdmin(false);
-          }
+          setIsAdmin(false);
           setAccessLevel(null);
         } else if (data) {
           console.log("User found in admin_access table:", data);
           setIsAdmin(true);
           setAccessLevel(data.access_level);
-        } else if (!isAdminFromMetadata) {
-          console.log("User not found in admin_access table and no admin metadata");
+        } else if (isAdminFromMetadata) {
+          console.log("User has admin metadata but not in admin_access table, creating entry");
+          
+          // Create admin access entry if it doesn't exist
+          const { error: insertError } = await supabase
+            .from('admin_access')
+            .insert([{ 
+              admin_id: user.id,
+              access_level: 'standard'
+            }]);
+            
+          if (insertError) {
+            console.error("Error creating admin access:", insertError);
+            setIsAdmin(false);
+            setAccessLevel(null);
+          } else {
+            console.log("Admin access created successfully");
+            setIsAdmin(true);
+            setAccessLevel('standard');
+          }
+        } else {
+          console.log("User is not an admin");
           setIsAdmin(false);
           setAccessLevel(null);
         }

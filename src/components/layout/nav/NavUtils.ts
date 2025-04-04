@@ -19,6 +19,8 @@ export const getNavLinks = (user: User | ExtendedUser | null) => {
     userType = user.user_type;
   }
   
+  console.log("NavUtils - Getting links for user type:", userType);
+  
   // Check if the user is an admin
   const isAdmin = userType === 'admin';
   

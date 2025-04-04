@@ -1,6 +1,7 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase/client'; // Fix the import path
+import { supabase } from '@/lib/supabase/client'; 
 import { useToast } from '@/hooks/use-toast';
 
 export interface ExtendedUser extends User {
@@ -43,7 +44,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setSession(newSession);
             const extendedUser = newSession.user as ExtendedUser;
             
-            // Don't make DB calls in the listener to prevent deadlocks
+            // Check for admin type in the user metadata
+            const userMetadataType = extendedUser.user_metadata?.user_type;
+            if (userMetadataType === 'admin') {
+              extendedUser.user_type = 'admin';
+            }
+            
             setUser(extendedUser);
             
             // Check admin status separately using setTimeout to avoid blocking
@@ -99,17 +105,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           // First, update state with what we have immediately
           setSession(initialSession);
-          setUser(initialSession.user as ExtendedUser);
+          const extendedUser = initialSession.user as ExtendedUser;
           
-          // Then check admin status separately using setTimeout to avoid Supabase auth deadlocks
+          // Check for admin type in the user metadata
+          const userMetadataType = extendedUser.user_metadata?.user_type;
+          if (userMetadataType === 'admin') {
+            extendedUser.user_type = 'admin';
+          }
+          
+          setUser(extendedUser);
+          
+          // Then check admin status separately
           if (initialSession.user) {
             setTimeout(async () => {
               try {
-                const { data: adminAccess } = await supabase
+                const { data: adminAccess, error: adminError } = await supabase
                   .from('admin_access')
                   .select('access_level')
                   .eq('admin_id', initialSession.user.id)
                   .maybeSingle();
+                  
+                if (adminError) {
+                  console.error("Error checking admin access:", adminError);
+                  return;
+                }
                   
                 if (adminAccess) {
                   console.log("User has admin access:", adminAccess);
@@ -208,7 +227,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Update state immediately with what we have
       setSession(data.session);
-      setUser(data.user as ExtendedUser);
+      const extendedUser = data.user as ExtendedUser;
+      
+      // Check for admin type in the user metadata
+      const userMetadataType = extendedUser.user_metadata?.user_type;
+      if (userMetadataType === 'admin') {
+        extendedUser.user_type = 'admin';
+      }
+      setUser(extendedUser);
       
       if (adminMode) {
         // Check if the user is admin in a non-blocking way
@@ -221,17 +247,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               .eq('admin_id', data.user.id)
               .maybeSingle();
               
-            if (adminError || !adminData) {
+            if (adminError) {
               console.error('Admin access check error:', adminError);
+              return;
+            }
+              
+            if (!adminData) {
+              console.error('No admin access found');
               toast({
                 title: "Access Denied",
                 description: "You don't have admin privileges.",
                 variant: "destructive",
               });
-              
-              await supabase.auth.signOut();
-              setUser(null);
-              setSession(null);
               return;
             }
             
