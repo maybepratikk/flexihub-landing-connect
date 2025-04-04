@@ -37,7 +37,7 @@ export function AdminAccountSetup() {
           description: result.message || "Admin account created successfully",
         });
       } else {
-        // Handle existing admin case
+        // Handle existing admin case (still show credentials)
         if (result.message?.toLowerCase().includes('already exists')) {
           setAdminCredentials({
             email: 'admin@example.com',

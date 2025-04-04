@@ -110,6 +110,7 @@ export async function checkAdminStatus(userId: string) {
 export async function createAdminAccount() {
   try {
     console.log("Starting admin account creation process");
+    
     // First check if the admin user already exists
     const { data: existingUser, error: checkError } = await supabase.auth
       .signInWithPassword({
@@ -150,7 +151,8 @@ export async function createAdminAccount() {
       };
     }
     
-    console.log("Creating new admin user account");
+    console.log("Admin user doesn't exist, creating new admin account");
+    
     // Sign up a new admin user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: 'admin@example.com',
@@ -158,9 +160,8 @@ export async function createAdminAccount() {
       options: {
         data: {
           full_name: 'Admin User',
-          user_type: 'admin'
-        },
-        emailRedirectTo: `${window.location.origin}/signin`
+          user_type: 'admin' // This should now be accepted by the updated constraint
+        }
       }
     });
     
@@ -184,20 +185,52 @@ export async function createAdminAccount() {
       };
     }
     
-    console.log("Admin user created successfully, now granting admin privileges");
+    console.log("Admin user created successfully with ID:", authData.user.id);
+    
+    // Manually ensure the profile is updated if needed
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', authData.user.id)
+      .maybeSingle();
+      
+    if (!profileData || profileError) {
+      console.log("Creating profile manually");
+      // Create profile manually if it doesn't exist
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert([{
+          id: authData.user.id,
+          email: 'admin@example.com',
+          full_name: 'Admin User',
+          user_type: 'admin'
+        }]);
+        
+      if (insertError) {
+        console.error('Error creating profile for admin:', insertError);
+        return {
+          success: false,
+          message: `Admin user created but failed to create profile: ${insertError.message}`,
+          email: 'admin@example.com',
+          password: 'Admin123!'
+        };
+      }
+    }
+    
+    console.log("Admin profile confirmed, now granting admin privileges");
     
     // Grant admin privileges
-    const { error } = await supabase
+    const { error: adminError } = await supabase
       .from('admin_access')
       .insert([
         { admin_id: authData.user.id, access_level: 'standard' }
       ]);
       
-    if (error) {
-      console.error('Error granting admin privileges:', error);
+    if (adminError) {
+      console.error('Error granting admin privileges:', adminError);
       return {
         success: false,
-        message: `Admin user created but failed to grant admin privileges: ${error.message}`,
+        message: `Admin user created but failed to grant admin privileges: ${adminError.message}`,
         email: 'admin@example.com',
         password: 'Admin123!'
       };
