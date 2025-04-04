@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -6,6 +7,7 @@ import { MainLayout } from './components/layout/MainLayout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { ClientRoute } from './components/auth/ClientRoute';
 import { FreelancerRoute } from './components/auth/FreelancerRoute';
+import { AdminRoute } from './components/auth/AdminRoute';
 
 import LandingPage from './pages/LandingPage';
 import HomePage from './pages/HomePage';
@@ -26,6 +28,15 @@ import MessagesPage from './pages/MessagesPage';
 import FreelancerProfilePage from './pages/FreelancerProfilePage';
 import ClientProfilePage from './pages/ClientProfilePage';
 
+// Import Admin Pages
+import AdminPage from './pages/admin/AdminPage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import UsersPage from './pages/admin/UsersPage';
+import JobsAdminPage from './pages/admin/JobsPage';
+import ApplicationsAdminPage from './pages/admin/ApplicationsPage';
+import ContractsPage from './pages/admin/ContractsPage';
+import SettingsPage from './pages/admin/SettingsPage';
+
 function App() {
   return (
     <BrowserRouter>
@@ -37,6 +48,20 @@ function App() {
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+          {/* Admin routes */}
+          <Route path="/admin" element={
+            <AdminRoute>
+              <AdminPage />
+            </AdminRoute>
+          }>
+            <Route index element={<AdminDashboardPage />} />
+            <Route path="users" element={<UsersPage />} />
+            <Route path="jobs" element={<JobsAdminPage />} />
+            <Route path="applications" element={<ApplicationsAdminPage />} />
+            <Route path="contracts" element={<ContractsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
 
           {/* Routes with main layout */}
           <Route element={<MainLayout />}>

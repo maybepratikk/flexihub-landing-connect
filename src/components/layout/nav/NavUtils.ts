@@ -19,6 +19,17 @@ export const getNavLinks = (user: User | ExtendedUser | null) => {
     userType = user.user_type;
   }
   
+  // Check if the user is an admin
+  const isAdmin = userType === 'admin';
+  
+  // Add admin link if user is admin
+  if (isAdmin) {
+    return [
+      ...commonLinks,
+      { name: 'Admin Dashboard', href: '/admin' }
+    ];
+  }
+  
   if (userType === 'client') {
     return [
       ...commonLinks,
