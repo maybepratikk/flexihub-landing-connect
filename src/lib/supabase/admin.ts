@@ -106,6 +106,76 @@ export async function checkAdminStatus(userId: string) {
   }
 }
 
+// Create a new admin account with default credentials
+export async function createAdminAccount() {
+  try {
+    // Sign up a new admin user
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: 'admin@example.com',
+      password: 'Admin123!',
+      options: {
+        data: {
+          full_name: 'Admin User',
+          user_type: 'admin'
+        }
+      }
+    });
+    
+    if (authError) {
+      console.error('Error creating admin user:', authError);
+      return {
+        success: false,
+        message: authError.message,
+        email: null,
+        password: null
+      };
+    }
+    
+    if (!authData.user) {
+      console.error('No user returned from sign up');
+      return {
+        success: false,
+        message: 'Failed to create admin user',
+        email: null,
+        password: null
+      };
+    }
+    
+    // Grant admin privileges
+    const { error } = await supabase
+      .from('admin_access')
+      .insert([
+        { admin_id: authData.user.id, access_level: 'standard' }
+      ]);
+      
+    if (error) {
+      console.error('Error granting admin privileges:', error);
+      return {
+        success: false,
+        message: error.message,
+        email: 'admin@example.com',
+        password: 'Admin123!'
+      };
+    }
+    
+    console.log(`Admin account created: admin@example.com`);
+    return {
+      success: true,
+      message: 'Admin account created successfully',
+      email: 'admin@example.com',
+      password: 'Admin123!'
+    };
+  } catch (err: any) {
+    console.error('Exception in createAdminAccount:', err);
+    return {
+      success: false,
+      message: err.message || 'Unknown error',
+      email: null,
+      password: null
+    };
+  }
+}
+
 // Create a test admin user (for development purposes)
 export async function createTestAdmin(email: string, userId: string) {
   try {
